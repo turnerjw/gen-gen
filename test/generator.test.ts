@@ -436,4 +436,36 @@ import type { User } from "./types";
     expect(result.content).toContain("name: ((faker) => faker.person.firstName())(faker)");
     expect(result.content).toContain("age: 42");
   });
+
+  test("warns for unmatched include/exclude filters and unused faker overrides", async () => {
+    const cwd = await createFixture({
+      "types.ts": `
+export type User = {
+  name: string;
+};
+`,
+      "data-gen.ts": `
+import type { User } from "./types";
+
+/**
+ * Generated below - DO NOT EDIT
+ */
+`,
+    });
+
+    const result = await generateDataFile({
+      cwd,
+      write: false,
+      include: ["User", "MissingType"],
+      exclude: ["AlsoMissing"],
+      fakerOverrides: {
+        "Missing.path": "() => faker.word.noun()",
+      },
+    });
+
+    expect(result.warnings).toContain("Unmatched include filters: MissingType");
+    expect(result.warnings).toContain("Unmatched exclude filters: AlsoMissing");
+    expect(result.warnings).toContain("Unused faker overrides: Missing.path");
+    expect(result.content).toContain("export function generateUser(");
+  });
 });

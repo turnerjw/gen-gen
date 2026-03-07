@@ -187,6 +187,8 @@ Filter matching accepts type text and generator names. For example:
 - `--include Pokemon,generateParty`
 - `--exclude APIResponse<Pokemon>,generatePokemonAPIResponse`
 
+If a configured include/exclude filter does not match any generation target, `gen-gen` emits a warning.
+
 Use function values in `FakerOverrides` (and plugin/API `fakerOverrides`) for type-safe expressions. String values from CLI are still supported for convenience.
 
 Faker override keys are matched in this order:
@@ -195,6 +197,8 @@ Faker override keys are matched in this order:
 2. `path.to.field` (for example `profile.locale`)
 3. final property name (for example `email`)
 4. type text (for example `APIResponse<Pokemon>`)
+
+Unused faker override keys also emit warnings, which helps catch typos in override paths.
 
 CLI example:
 

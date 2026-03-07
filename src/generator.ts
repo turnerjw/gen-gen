@@ -30,6 +30,7 @@ interface TargetSpec {
 }
 
 interface FakerOverrideSpec {
+  sourceKey: string;
   expression: string;
   invokeMode: "raw" | "call" | "callWithFaker";
 }
@@ -41,6 +42,7 @@ interface GenerationContext {
   activeTypes: Set<string>;
   maxDepth: number;
   fakerOverrides: Map<string, FakerOverrideSpec>;
+  usedFakerOverrideKeys: Set<string>;
 }
 
 const DEFAULT_INPUT = "data-gen.ts";
@@ -58,16 +60,20 @@ export async function generateDataFile(options: GenerateOptions = {}): Promise<G
     exclude: options.exclude ?? [],
     fakerOverrides: options.fakerOverrides ?? {},
   });
-  const generated = emitFunctions(
+  const emitted = emitFunctions(
     parsed.targets,
     parsed.checker,
     parsed.sourceFile,
     options.deepMerge ?? false,
     parsed.fakerOverrides,
   );
+  const warnings = [
+    ...parsed.warnings,
+    ...collectUnusedFakerOverrideWarnings(parsed.fakerOverrides, emitted.usedFakerOverrideKeys),
+  ];
 
   let next = ensureFakerImport(original);
-  next = replaceGeneratedSection(next, generated, markerText);
+  next = replaceGeneratedSection(next, emitted.content, markerText);
 
   const changed = original !== next;
   if (write && changed) {
@@ -79,7 +85,7 @@ export async function generateDataFile(options: GenerateOptions = {}): Promise<G
     changed,
     content: next,
     watchedFiles: parsed.watchedFiles,
-    warnings: parsed.warnings,
+    warnings,
   };
 }
 
@@ -145,14 +151,15 @@ function parseTargets(
     fakerOverrides.set(normalizeFilterKey(key), value);
   }
   for (const [key, value] of Object.entries(filterOptions.fakerOverrides)) {
-    fakerOverrides.set(normalizeFilterKey(key), toFakerOverrideSpec(value));
+    fakerOverrides.set(normalizeFilterKey(key), toFakerOverrideSpec(value, key));
   }
 
   const uniqueTargets = dedupeTargets(targets);
-  const filteredTargets = applyTargetFilters(uniqueTargets, {
+  const filterResult = applyTargetFilters(uniqueTargets, {
     include: mergeFilters(filterOptions.include, inFileInclude),
     exclude: mergeFilters(filterOptions.exclude, inFileExclude),
   });
+  warnings.push(...collectUnmatchedFilterWarnings(filterResult));
 
   const watchedFiles = program
     .getSourceFiles()
@@ -162,7 +169,7 @@ function parseTargets(
   return {
     sourceFile,
     checker,
-    targets: filteredTargets,
+    targets: filterResult.targets,
     warnings,
     watchedFiles,
     fakerOverrides,
@@ -298,6 +305,7 @@ function collectFakerOverrides(sourceFile: ts.SourceFile, warnings: string[]): R
             : "call"
           : "raw";
         overrides[key] = {
+          sourceKey: key,
           expression: initializer.getText(sourceFile),
           invokeMode,
         };
@@ -328,15 +336,17 @@ function getObjectPropertyName(name: ts.PropertyName): string | null {
   return null;
 }
 
-function toFakerOverrideSpec(input: FakerOverrideInput): FakerOverrideSpec {
+function toFakerOverrideSpec(input: FakerOverrideInput, sourceKey = ""): FakerOverrideSpec {
   if (typeof input === "function") {
     return {
+      sourceKey,
       expression: input.toString(),
       invokeMode: input.length > 0 ? "callWithFaker" : "call",
     };
   }
 
   return {
+    sourceKey,
     expression: input,
     invokeMode: "raw",
   };
@@ -358,12 +368,29 @@ function applyTargetFilters(
     include: string[];
     exclude: string[];
   },
-): TargetSpec[] {
-  const includeSet = new Set(filters.include.map(normalizeFilterKey));
-  const excludeSet = new Set(filters.exclude.map(normalizeFilterKey));
+): {
+  targets: TargetSpec[];
+  include: Map<string, string>;
+  exclude: Map<string, string>;
+  matchedInclude: Set<string>;
+  matchedExclude: Set<string>;
+} {
+  const includeSet = normalizeFilterInput(filters.include);
+  const excludeSet = normalizeFilterInput(filters.exclude);
+  const matchedInclude = new Set<string>();
+  const matchedExclude = new Set<string>();
 
-  return targets.filter((target) => {
+  const filteredTargets = targets.filter((target) => {
     const keys = getTargetFilterKeys(target);
+    for (const key of keys) {
+      if (includeSet.has(key)) {
+        matchedInclude.add(key);
+      }
+      if (excludeSet.has(key)) {
+        matchedExclude.add(key);
+      }
+    }
+
     if (includeSet.size > 0 && !keys.some((key) => includeSet.has(key))) {
       return false;
     }
@@ -374,6 +401,26 @@ function applyTargetFilters(
 
     return true;
   });
+
+  return {
+    targets: filteredTargets,
+    include: includeSet,
+    exclude: excludeSet,
+    matchedInclude,
+    matchedExclude,
+  };
+}
+
+function normalizeFilterInput(values: string[]): Map<string, string> {
+  const normalized = new Map<string, string>();
+  for (const value of values) {
+    const key = normalizeFilterKey(value);
+    if (key.length === 0 || normalized.has(key)) {
+      continue;
+    }
+    normalized.set(key, value);
+  }
+  return normalized;
 }
 
 function getTargetFilterKeys(target: TargetSpec): string[] {
@@ -447,7 +494,10 @@ function emitFunctions(
   sourceFile: ts.SourceFile,
   deepMerge: boolean,
   fakerOverrides: Map<string, FakerOverrideSpec>,
-): string {
+): {
+  content: string;
+  usedFakerOverrideKeys: Set<string>;
+} {
   const typeToFunctionName = new Map<string, string>();
 
   for (const target of targets) {
@@ -462,11 +512,15 @@ function emitFunctions(
     activeTypes: new Set<string>(),
     maxDepth: 8,
     fakerOverrides,
+    usedFakerOverrideKeys: new Set<string>(),
   };
 
   const sections: string[] = [emitSharedHelperRuntime(deepMerge)];
   sections.push(...targets.map((target) => emitFunction(target, context)));
-  return sections.join("\n\n");
+  return {
+    content: sections.join("\n\n"),
+    usedFakerOverrideKeys: context.usedFakerOverrideKeys,
+  };
 }
 
 function emitFunction(target: TargetSpec, context: GenerationContext): string {
@@ -892,11 +946,51 @@ function resolveFakerOverride(
   for (const key of keys) {
     const override = context.fakerOverrides.get(key);
     if (override) {
+      context.usedFakerOverrideKeys.add(key);
       return override;
     }
   }
 
   return undefined;
+}
+
+function collectUnmatchedFilterWarnings(filterResult: {
+  include: Map<string, string>;
+  exclude: Map<string, string>;
+  matchedInclude: Set<string>;
+  matchedExclude: Set<string>;
+}): string[] {
+  const warnings: string[] = [];
+  const unmatchedInclude = [...filterResult.include.entries()]
+    .filter(([key]) => !filterResult.matchedInclude.has(key))
+    .map(([, original]) => original);
+  const unmatchedExclude = [...filterResult.exclude.entries()]
+    .filter(([key]) => !filterResult.matchedExclude.has(key))
+    .map(([, original]) => original);
+
+  if (unmatchedInclude.length > 0) {
+    warnings.push(`Unmatched include filters: ${unmatchedInclude.join(", ")}`);
+  }
+
+  if (unmatchedExclude.length > 0) {
+    warnings.push(`Unmatched exclude filters: ${unmatchedExclude.join(", ")}`);
+  }
+
+  return warnings;
+}
+
+function collectUnusedFakerOverrideWarnings(
+  overrides: Map<string, FakerOverrideSpec>,
+  usedOverrideKeys: Set<string>,
+): string[] {
+  const unused = [...overrides.entries()]
+    .filter(([key]) => !usedOverrideKeys.has(key))
+    .map(([, spec]) => spec.sourceKey);
+  if (unused.length === 0) {
+    return [];
+  }
+
+  return [`Unused faker overrides: ${unused.join(", ")}`];
 }
 
 function getDeclaredTypeText(declaration: ts.Node, sourceFile: ts.SourceFile): string | undefined {

@@ -314,4 +314,59 @@ import type { UnionWrapper } from "./types";
     expect(result.content).toContain("userId: faker.word.noun()");
     expect(result.content).toContain("orderId: faker.number.int({ min: 1, max: 1000 })");
   });
+
+  test("applies include/exclude filters from GenerateOptions", async () => {
+    const cwd = await createFixture({
+      "types.ts": `
+export type A = { a: string };
+export type B = { b: number };
+export type C = { c: boolean };
+`,
+      "data-gen.ts": `
+import type { A, B, C } from "./types";
+
+/**
+ * Generated below - DO NOT EDIT
+ */
+`,
+    });
+
+    const result = await generateDataFile({
+      cwd,
+      write: false,
+      include: ["A", "generateB"],
+      exclude: ["B"],
+    });
+
+    expect(result.content).toContain("export function generateA(");
+    expect(result.content).not.toContain("export function generateB(");
+    expect(result.content).not.toContain("export function generateC(");
+  });
+
+  test("applies IncludeGenerators and ExcludeGenerators aliases in source file", async () => {
+    const cwd = await createFixture({
+      "types.ts": `
+export type A = { a: string };
+export type B = { b: number };
+export type Wrapper<T> = { value: T };
+`,
+      "data-gen.ts": `
+import type { A, B, Wrapper } from "./types";
+
+type ConcreteGenerics = [Wrapper<A>];
+type IncludeGenerators = [A, Wrapper<A>];
+type ExcludeGenerators = [Wrapper<A>];
+
+/**
+ * Generated below - DO NOT EDIT
+ */
+`,
+    });
+
+    const result = await generateDataFile({cwd, write: false});
+
+    expect(result.content).toContain("export function generateA(");
+    expect(result.content).not.toContain("export function generateB(");
+    expect(result.content).not.toContain("export function generateAWrapper(");
+  });
 });

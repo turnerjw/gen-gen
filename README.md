@@ -55,6 +55,8 @@ Options:
 - `--dry-run`: print resulting file contents instead of writing
 - `-w, --watch`: run continuously and regenerate on changes
 - `--deep-merge`: merge overrides deeply instead of shallow spread
+- `--include`: comma-separated filters to include specific generators/types
+- `--exclude`: comma-separated filters to exclude specific generators/types
 
 ### Deep Merge Behavior
 
@@ -137,7 +139,8 @@ The input file should:
 
 1. Import the types you want factories for.
 2. Optionally define `type ConcreteGenerics = [...]` to specify concrete generic instantiations.
-3. Include a marker comment containing `Generated below - DO NOT EDIT`.
+3. Optionally define `type IncludeGenerators = [...]` / `type ExcludeGenerators = [...]` to filter generated targets.
+4. Include a marker comment containing `Generated below - DO NOT EDIT`.
 
 Example:
 
@@ -148,10 +151,24 @@ type ConcreteGenerics = [
   APIResponse<Pokemon>
 ];
 
+type IncludeGenerators = [
+  Pokemon,
+  APIResponse<Pokemon>
+];
+
+type ExcludeGenerators = [
+  APIResponse<Pokemon>
+];
+
 /**
  * Generated below - DO NOT EDIT
  */
 ```
+
+Filter matching accepts type text and generator names. For example:
+
+- `--include Pokemon,generateParty`
+- `--exclude APIResponse<Pokemon>,generatePokemonAPIResponse`
 
 ### Generic naming
 

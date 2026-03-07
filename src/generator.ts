@@ -8,6 +8,8 @@ export interface GenerateOptions {
   markerText?: string;
   write?: boolean;
   deepMerge?: boolean;
+  include?: string[];
+  exclude?: string[];
 }
 
 export interface GenerateResult {
@@ -49,7 +51,10 @@ export async function generateDataFile(options: GenerateOptions = {}): Promise<G
   const write = options.write ?? true;
 
   const original = await fs.readFile(inputPath, "utf8");
-  const parsed = parseTargets(inputPath);
+  const parsed = parseTargets(inputPath, {
+    include: options.include ?? [],
+    exclude: options.exclude ?? [],
+  });
   const generated = emitFunctions(parsed.targets, parsed.checker, parsed.sourceFile, options.deepMerge ?? false);
 
   let next = ensureFakerImport(original);
@@ -69,7 +74,13 @@ export async function generateDataFile(options: GenerateOptions = {}): Promise<G
   };
 }
 
-function parseTargets(inputPath: string): {
+function parseTargets(
+  inputPath: string,
+  filterOptions: {
+    include: string[];
+    exclude: string[];
+  },
+): {
   sourceFile: ts.SourceFile;
   checker: ts.TypeChecker;
   targets: TargetSpec[];
@@ -111,7 +122,13 @@ function parseTargets(inputPath: string): {
     });
   }
 
+  const inFileInclude = collectTupleTypeEntries(sourceFile, "IncludeGenerators");
+  const inFileExclude = collectTupleTypeEntries(sourceFile, "ExcludeGenerators");
   const uniqueTargets = dedupeTargets(targets);
+  const filteredTargets = applyTargetFilters(uniqueTargets, {
+    include: mergeFilters(filterOptions.include, inFileInclude),
+    exclude: mergeFilters(filterOptions.exclude, inFileExclude),
+  });
 
   const watchedFiles = program
     .getSourceFiles()
@@ -121,7 +138,7 @@ function parseTargets(inputPath: string): {
   return {
     sourceFile,
     checker,
-    targets: uniqueTargets,
+    targets: filteredTargets,
     warnings,
     watchedFiles,
   };
@@ -188,6 +205,74 @@ function collectConcreteGenericNodes(sourceFile: ts.SourceFile): ts.TypeNode[] {
   }
 
   return [];
+}
+
+function collectTupleTypeEntries(sourceFile: ts.SourceFile, aliasName: string): string[] {
+  for (const statement of sourceFile.statements) {
+    if (!ts.isTypeAliasDeclaration(statement)) {
+      continue;
+    }
+
+    if (statement.name.text !== aliasName) {
+      continue;
+    }
+
+    if (!ts.isTupleTypeNode(statement.type)) {
+      return [];
+    }
+
+    return statement.type.elements.map((element) => element.getText(sourceFile));
+  }
+
+  return [];
+}
+
+function mergeFilters(...groups: string[][]): string[] {
+  const merged = new Set<string>();
+  for (const group of groups) {
+    for (const value of group) {
+      merged.add(value);
+    }
+  }
+  return [...merged];
+}
+
+function applyTargetFilters(
+  targets: TargetSpec[],
+  filters: {
+    include: string[];
+    exclude: string[];
+  },
+): TargetSpec[] {
+  const includeSet = new Set(filters.include.map(normalizeFilterKey));
+  const excludeSet = new Set(filters.exclude.map(normalizeFilterKey));
+
+  return targets.filter((target) => {
+    const keys = getTargetFilterKeys(target);
+    if (includeSet.size > 0 && !keys.some((key) => includeSet.has(key))) {
+      return false;
+    }
+
+    if (keys.some((key) => excludeSet.has(key))) {
+      return false;
+    }
+
+    return true;
+  });
+}
+
+function getTargetFilterKeys(target: TargetSpec): string[] {
+  const keys = new Set<string>();
+  keys.add(normalizeFilterKey(target.typeText));
+  keys.add(normalizeFilterKey(target.functionName));
+  if (target.functionName.startsWith("generate")) {
+    keys.add(normalizeFilterKey(target.functionName.slice("generate".length)));
+  }
+  return [...keys];
+}
+
+function normalizeFilterKey(value: string): string {
+  return value.replace(/\s+/g, "").toLowerCase();
 }
 
 function isGenericDeclaration(symbol: ts.Symbol): boolean {

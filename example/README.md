@@ -5,6 +5,7 @@
 - `data-gen-generics.ts` + `generics-types.ts` + `usage-generics.ts`: concrete generics via `ConcreteGenerics`.
 - `data-gen-unions.ts` + `unions-types.ts` + `usage-unions.ts`: literal unions and discriminated object unions.
 - `data-gen-deep-merge.ts` + `deep-merge-types.ts` + `usage-deep-merge.ts`: deep-merge generation behavior.
+- `data-gen-filters.ts` + `filters-types.ts` + `usage-filters.ts`: include/exclude generator filtering.
 
 Generate each file with:
 
@@ -12,4 +13,5 @@ Generate each file with:
 bun ./dist/cli.js --input example/data-gen-generics.ts
 bun ./dist/cli.js --input example/data-gen-unions.ts
 bun ./dist/cli.js --input example/data-gen-deep-merge.ts --deep-merge
+bun ./dist/cli.js --input example/data-gen-filters.ts --include Account,Session --exclude Session
 ```

@@ -10,6 +10,8 @@ interface CliOptions {
   dryRun: boolean;
   watch: boolean;
   deepMerge: boolean;
+  include: string[];
+  exclude: string[];
 }
 
 async function main(): Promise<void> {
@@ -35,6 +37,8 @@ async function main(): Promise<void> {
     cwd: options.cwd,
     write: !options.dryRun && !options.check,
     deepMerge: options.deepMerge,
+    include: options.include,
+    exclude: options.exclude,
   });
 
   for (const warning of result.warnings) {
@@ -67,6 +71,8 @@ function parseArgs(args: string[]): CliOptions {
     dryRun: false,
     watch: false,
     deepMerge: false,
+    include: [],
+    exclude: [],
   };
 
   for (let i = 0; i < args.length; i += 1) {
@@ -104,6 +110,18 @@ function parseArgs(args: string[]): CliOptions {
       continue;
     }
 
+    if (arg === "--include") {
+      options.include.push(...parseListArg(args[i + 1]));
+      i += 1;
+      continue;
+    }
+
+    if (arg === "--exclude") {
+      options.exclude.push(...parseListArg(args[i + 1]));
+      i += 1;
+      continue;
+    }
+
     throw new Error(`Unknown argument: ${arg}`);
   }
 
@@ -123,6 +141,8 @@ Options:
       --dry-run       Print resulting file content to stdout
   -w, --watch         Regenerate on file changes
       --deep-merge    Deep merge overrides instead of shallow spread
+      --include       Comma-separated generator/type filters to include
+      --exclude       Comma-separated generator/type filters to exclude
   -h, --help          Show this help message
 `);
 }
@@ -175,6 +195,8 @@ async function runWatchMode(options: CliOptions): Promise<void> {
         cwd: options.cwd,
         write: true,
         deepMerge: options.deepMerge,
+        include: options.include,
+        exclude: options.exclude,
       });
 
       for (const warning of result.warnings) {
@@ -218,6 +240,17 @@ async function runWatchMode(options: CliOptions): Promise<void> {
   console.log("[gen-gen] Watching for changes...");
   await run();
   await new Promise(() => {});
+}
+
+function parseListArg(raw: string | undefined): string[] {
+  if (!raw) {
+    throw new Error("Expected a comma-separated value after list argument.");
+  }
+
+  return raw
+    .split(",")
+    .map((item) => item.trim())
+    .filter((item) => item.length > 0);
 }
 
 main().catch((error: unknown) => {

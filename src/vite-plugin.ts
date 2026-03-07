@@ -5,6 +5,8 @@ export interface GenGenPluginOptions {
   input?: string;
   markerText?: string;
   deepMerge?: boolean;
+  include?: string[];
+  exclude?: string[];
 }
 
 interface ViteLikePluginContext {
@@ -31,6 +33,8 @@ export function genGenPlugin(options: GenGenPluginOptions = {}) {
       markerText: options.markerText,
       write,
       deepMerge: options.deepMerge,
+      include: options.include,
+      exclude: options.exclude,
     });
 
     watchedFiles.clear();

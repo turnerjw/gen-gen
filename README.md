@@ -2,6 +2,10 @@
 
 `gen-gen` generates Faker-based test data factories from imported TypeScript types.
 
+## Project Status
+
+Track implemented and planned features in [PROGRESS.md](./PROGRESS.md).
+
 It reads a generator source file (default: `data-gen.ts`), then writes functions like:
 
 ```ts

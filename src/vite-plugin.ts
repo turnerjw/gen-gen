@@ -4,6 +4,7 @@ import {generateDataFile, type FakerOverrideInput, type GenerateResult} from "./
 export interface GenGenPluginOptions {
   input?: string;
   markerText?: string;
+  failOnWarn?: boolean;
   deepMerge?: boolean;
   include?: string[];
   exclude?: string[];
@@ -33,6 +34,7 @@ export function genGenPlugin(options: GenGenPluginOptions = {}) {
       cwd: root,
       markerText: options.markerText,
       write,
+      failOnWarn: options.failOnWarn,
       deepMerge: options.deepMerge,
       include: options.include,
       exclude: options.exclude,

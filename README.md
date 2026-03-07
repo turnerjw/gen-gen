@@ -57,6 +57,7 @@ Options:
 - `--cwd <path>`: working directory to resolve `--input`
 - `--check`: exits with code `1` if the generated section is stale
 - `--dry-run`: print resulting file contents instead of writing
+- `--fail-on-warn`: fail generation when warnings are emitted
 - `-w, --watch`: run continuously and regenerate on changes
 - `--deep-merge`: merge overrides deeply instead of shallow spread
 - `--include`: comma-separated filters to include specific generators/types
@@ -135,6 +136,7 @@ export default defineConfig({
   plugins: [
     genGenPlugin({
       input: "data-gen.ts",
+      failOnWarn: true,
       deepMerge: true,
       include: ["User", "Account"],
       fakerOverrides: {

@@ -7,6 +7,7 @@ export interface GenerateOptions {
   cwd?: string;
   markerText?: string;
   write?: boolean;
+  failOnWarn?: boolean;
   deepMerge?: boolean;
   include?: string[];
   exclude?: string[];
@@ -71,6 +72,9 @@ export async function generateDataFile(options: GenerateOptions = {}): Promise<G
     ...parsed.warnings,
     ...collectUnusedFakerOverrideWarnings(parsed.fakerOverrides, emitted.usedFakerOverrideKeys),
   ];
+  if (options.failOnWarn && warnings.length > 0) {
+    throw new Error(buildFailOnWarnMessage(warnings));
+  }
 
   let next = ensureFakerImport(original);
   next = replaceGeneratedSection(next, emitted.content, markerText);
@@ -87,6 +91,10 @@ export async function generateDataFile(options: GenerateOptions = {}): Promise<G
     watchedFiles: parsed.watchedFiles,
     warnings,
   };
+}
+
+function buildFailOnWarnMessage(warnings: string[]): string {
+  return `Generation failed due to warnings:\n${warnings.map((warning) => `- ${warning}`).join("\n")}`;
 }
 
 function parseTargets(

@@ -26,15 +26,13 @@ Last updated: 2026-03-07
 - Diagnostics:
   - Warn on unmatched include/exclude filters
   - Warn on unused faker override keys
+- Fail-on-warning mode:
+  - CLI `--fail-on-warn`
+  - API/plugin `failOnWarn`
 - Comprehensive core generator tests with `bun:test`
 - Expanded examples and docs (deep-merge behavior and feature usage)
 
 ## Remaining (Open)
-
-### High Priority
-
-- [ ] `--fail-on-warn` (CLI) and equivalent plugin/API option
-  - Goal: fail CI when warnings are emitted
 
 ### Medium Priority
 
@@ -63,8 +61,8 @@ Last updated: 2026-03-07
 
 ## Suggested Next Implementation Order
 
-1. `--fail-on-warn` for CI reliability
-2. CLI watch-mode tests
-3. Vite plugin tests
-4. `@gen-gen-ignore` controls
-5. Policy options for optional/readonly/index signatures
+1. CLI watch-mode tests
+2. Vite plugin tests
+3. `@gen-gen-ignore` controls
+4. Policy options for optional/readonly/index signatures
+5. Branded/opaque type ergonomics

@@ -8,6 +8,7 @@ interface CliOptions {
   cwd?: string;
   check: boolean;
   dryRun: boolean;
+  failOnWarn: boolean;
   watch: boolean;
   deepMerge: boolean;
   include: string[];
@@ -37,6 +38,7 @@ async function main(): Promise<void> {
     input: options.input,
     cwd: options.cwd,
     write: !options.dryRun && !options.check,
+    failOnWarn: options.failOnWarn,
     deepMerge: options.deepMerge,
     include: options.include,
     exclude: options.exclude,
@@ -71,6 +73,7 @@ function parseArgs(args: string[]): CliOptions {
   const options: CliOptions = {
     check: false,
     dryRun: false,
+    failOnWarn: false,
     watch: false,
     deepMerge: false,
     include: [],
@@ -100,6 +103,11 @@ function parseArgs(args: string[]): CliOptions {
 
     if (arg === "--dry-run") {
       options.dryRun = true;
+      continue;
+    }
+
+    if (arg === "--fail-on-warn") {
+      options.failOnWarn = true;
       continue;
     }
 
@@ -149,6 +157,7 @@ Options:
       --cwd <path>    Working directory to resolve input from
       --check         Exit 1 if generated section is out of date
       --dry-run       Print resulting file content to stdout
+      --fail-on-warn  Exit with error if generation emits warnings
   -w, --watch         Regenerate on file changes
       --deep-merge    Deep merge overrides instead of shallow spread
       --include       Comma-separated generator/type filters to include
@@ -205,6 +214,7 @@ async function runWatchMode(options: CliOptions): Promise<void> {
         input: options.input,
         cwd: options.cwd,
         write: true,
+        failOnWarn: options.failOnWarn,
         deepMerge: options.deepMerge,
         include: options.include,
         exclude: options.exclude,

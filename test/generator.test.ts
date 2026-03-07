@@ -468,4 +468,52 @@ import type { User } from "./types";
     expect(result.warnings).toContain("Unused faker overrides: Missing.path");
     expect(result.content).toContain("export function generateUser(");
   });
+
+  test("failOnWarn throws when warnings are emitted", async () => {
+    const cwd = await createFixture({
+      "types.ts": `
+export type User = { name: string };
+`,
+      "data-gen.ts": `
+import type { User } from "./types";
+
+/**
+ * Generated below - DO NOT EDIT
+ */
+`,
+    });
+
+    await expect(
+      generateDataFile({
+        cwd,
+        write: false,
+        failOnWarn: true,
+        include: ["MissingType"],
+      }),
+    ).rejects.toThrow("Generation failed due to warnings:");
+  });
+
+  test("failOnWarn does not throw when no warnings are emitted", async () => {
+    const cwd = await createFixture({
+      "types.ts": `
+export type User = { name: string };
+`,
+      "data-gen.ts": `
+import type { User } from "./types";
+
+/**
+ * Generated below - DO NOT EDIT
+ */
+`,
+    });
+
+    const result = await generateDataFile({
+      cwd,
+      write: false,
+      failOnWarn: true,
+    });
+
+    expect(result.warnings).toHaveLength(0);
+    expect(result.content).toContain("export function generateUser(");
+  });
 });

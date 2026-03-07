@@ -29,6 +29,12 @@ const data = generateUnnamedNestedExample(({generateB}) => ({
 }));
 ```
 
+Union handling notes:
+
+- Literal unions (like `"a" | "b"` or `1 | 2 | 3`) are generated via `faker.helpers.arrayElement(...)`.
+- Boolean literal unions (`true | false`) use `faker.datatype.boolean()`.
+- Object unions (including discriminated unions) generate one branch and select via `faker.helpers.arrayElement(...)`.
+
 ## Install
 
 ```bash

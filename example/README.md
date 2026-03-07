@@ -1,0 +1,15 @@
+# Examples
+
+- `data-gen.ts` + `types.ts` + `usage.ts`: base nested helper callback usage.
+- `usage-nested.ts`: recursive helper callback usage (`generateB` -> `generateE`).
+- `data-gen-generics.ts` + `generics-types.ts` + `usage-generics.ts`: concrete generics via `ConcreteGenerics`.
+- `data-gen-unions.ts` + `unions-types.ts` + `usage-unions.ts`: literal unions and discriminated object unions.
+- `data-gen-deep-merge.ts` + `deep-merge-types.ts` + `usage-deep-merge.ts`: deep-merge generation behavior.
+
+Generate each file with:
+
+```bash
+bun ./dist/cli.js --input example/data-gen-generics.ts
+bun ./dist/cli.js --input example/data-gen-unions.ts
+bun ./dist/cli.js --input example/data-gen-deep-merge.ts --deep-merge
+```

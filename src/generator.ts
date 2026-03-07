@@ -430,6 +430,32 @@ function emitExpression(type: ts.Type, context: GenerationContext, depth: number
     }
 
     if (concreteMembers.length > 0) {
+      if (areAllStringLiterals(concreteMembers)) {
+        const values = concreteMembers.map((member) => JSON.stringify((member as ts.StringLiteralType).value));
+        return `faker.helpers.arrayElement([${values.join(", ")}])`;
+      }
+
+      if (areAllNumberLiterals(concreteMembers)) {
+        const values = concreteMembers.map((member) => String((member as ts.NumberLiteralType).value));
+        return `faker.helpers.arrayElement([${values.join(", ")}])`;
+      }
+
+      if (areAllBooleanLiterals(concreteMembers)) {
+        const values = concreteMembers.map((member) =>
+          checker.typeToString(member, context.sourceFile, ts.TypeFormatFlags.NoTruncation) === "true" ? "true" : "false",
+        );
+        const unique = [...new Set(values)];
+        if (unique.length === 1) {
+          return unique[0] ?? "false";
+        }
+        return "faker.datatype.boolean()";
+      }
+
+      if (concreteMembers.every((member) => (member.flags & ts.TypeFlags.Object) !== 0)) {
+        const branches = concreteMembers.map((member) => emitExpression(member, context, depth + 1, fallbackTypeText));
+        return `faker.helpers.arrayElement([${branches.join(", ")}])`;
+      }
+
       const firstMember = concreteMembers[0];
       if (!firstMember) {
         return "undefined";
@@ -498,6 +524,18 @@ function emitExpression(type: ts.Type, context: GenerationContext, depth: number
   }
 
   return `{} as ${typeText}`;
+}
+
+function areAllStringLiterals(types: ts.Type[]): boolean {
+  return types.length > 0 && types.every((type) => type.isStringLiteral());
+}
+
+function areAllNumberLiterals(types: ts.Type[]): boolean {
+  return types.length > 0 && types.every((type) => type.isNumberLiteral());
+}
+
+function areAllBooleanLiterals(types: ts.Type[]): boolean {
+  return types.length > 0 && types.every((type) => (type.flags & ts.TypeFlags.BooleanLiteral) !== 0);
 }
 
 function emitCallbackType(target: TargetSpec, callbackTypeName: string, nestedHelpers: NestedHelperSpec[]): string {

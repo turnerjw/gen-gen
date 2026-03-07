@@ -260,4 +260,58 @@ type ConcreteGenerics = [Container<A, B, C>]
     expect(result.content).toContain("export function generateABCContainer(");
     expect(result.content).toContain("Partial<Container<A, B, C>>");
   });
+
+  test("generates literal unions with faker.helpers.arrayElement", async () => {
+    const cwd = await createFixture({
+      "types.ts": `
+export type LiteralUnions = {
+  status: "idle" | "loading" | "error";
+  rating: 1 | 2 | 3;
+  flag: true | false;
+};
+`,
+      "data-gen.ts": `
+import type { LiteralUnions } from "./types";
+
+/**
+ * Generated below - DO NOT EDIT
+ */
+`,
+    });
+
+    const result = await generateDataFile({cwd, write: false});
+
+    expect(result.content).toContain('status: faker.helpers.arrayElement(["idle", "loading", "error"])');
+    expect(result.content).toContain("rating: faker.helpers.arrayElement([1, 2, 3])");
+    expect(result.content).toContain("flag: faker.datatype.boolean()");
+  });
+
+  test("generates discriminated unions by selecting an object branch", async () => {
+    const cwd = await createFixture({
+      "types.ts": `
+export type EventPayload =
+  | { kind: "user"; userId: string; admin: boolean }
+  | { kind: "order"; orderId: number; total: number };
+
+export type UnionWrapper = {
+  payload: EventPayload;
+};
+`,
+      "data-gen.ts": `
+import type { UnionWrapper } from "./types";
+
+/**
+ * Generated below - DO NOT EDIT
+ */
+`,
+    });
+
+    const result = await generateDataFile({cwd, write: false});
+
+    expect(result.content).toContain("payload: faker.helpers.arrayElement([");
+    expect(result.content).toContain('kind: "user"');
+    expect(result.content).toContain('kind: "order"');
+    expect(result.content).toContain("userId: faker.word.noun()");
+    expect(result.content).toContain("orderId: faker.number.int({ min: 1, max: 1000 })");
+  });
 });

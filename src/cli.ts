@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import fs from "node:fs";
 import path from "node:path";
 import {generateDataFile} from "./generator.js";
 
@@ -7,6 +8,7 @@ interface CliOptions {
   cwd?: string;
   check: boolean;
   dryRun: boolean;
+  watch: boolean;
 }
 
 async function main(): Promise<void> {
@@ -18,6 +20,15 @@ async function main(): Promise<void> {
   }
 
   const options = parseArgs(args);
+  if (options.watch) {
+    if (options.check || options.dryRun) {
+      throw new Error("--watch cannot be combined with --check or --dry-run.");
+    }
+
+    await runWatchMode(options);
+    return;
+  }
+
   const result = await generateDataFile({
     input: options.input,
     cwd: options.cwd,
@@ -52,6 +63,7 @@ function parseArgs(args: string[]): CliOptions {
   const options: CliOptions = {
     check: false,
     dryRun: false,
+    watch: false,
   };
 
   for (let i = 0; i < args.length; i += 1) {
@@ -79,6 +91,11 @@ function parseArgs(args: string[]): CliOptions {
       continue;
     }
 
+    if (arg === "--watch" || arg === "-w") {
+      options.watch = true;
+      continue;
+    }
+
     throw new Error(`Unknown argument: ${arg}`);
   }
 
@@ -96,8 +113,101 @@ Options:
       --cwd <path>    Working directory to resolve input from
       --check         Exit 1 if generated section is out of date
       --dry-run       Print resulting file content to stdout
+  -w, --watch         Regenerate on file changes
   -h, --help          Show this help message
 `);
+}
+
+async function runWatchMode(options: CliOptions): Promise<void> {
+  const watchers = new Map<string, fs.FSWatcher>();
+  let timer: NodeJS.Timeout | undefined;
+  let running = false;
+  let queued = false;
+
+  const closeWatchers = (): void => {
+    for (const watcher of watchers.values()) {
+      watcher.close();
+    }
+    watchers.clear();
+  };
+
+  const syncWatchers = (files: string[]): void => {
+    const next = new Set(files.map((file) => path.resolve(file)));
+
+    for (const existingFile of [...watchers.keys()]) {
+      if (!next.has(existingFile)) {
+        watchers.get(existingFile)?.close();
+        watchers.delete(existingFile);
+      }
+    }
+
+    for (const file of next) {
+      if (watchers.has(file)) {
+        continue;
+      }
+
+      const watcher = fs.watch(file, () => {
+        scheduleRun();
+      });
+      watchers.set(file, watcher);
+    }
+  };
+
+  const run = async (): Promise<void> => {
+    if (running) {
+      queued = true;
+      return;
+    }
+
+    running = true;
+    try {
+      const result = await generateDataFile({
+        input: options.input,
+        cwd: options.cwd,
+        write: true,
+      });
+
+      for (const warning of result.warnings) {
+        console.warn(`[gen-gen] ${warning}`);
+      }
+
+      const verb = result.changed ? "Generated" : "No changes for";
+      console.log(`[gen-gen] ${verb} ${path.relative(process.cwd(), result.inputPath)}`);
+      syncWatchers(result.watchedFiles);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      console.error(`[gen-gen] ${message}`);
+    } finally {
+      running = false;
+      if (queued) {
+        queued = false;
+        scheduleRun();
+      }
+    }
+  };
+
+  const scheduleRun = (): void => {
+    if (timer) {
+      clearTimeout(timer);
+    }
+    timer = setTimeout(() => {
+      void run();
+    }, 80);
+  };
+
+  process.on("SIGINT", () => {
+    closeWatchers();
+    process.exit(0);
+  });
+
+  process.on("SIGTERM", () => {
+    closeWatchers();
+    process.exit(0);
+  });
+
+  console.log("[gen-gen] Watching for changes...");
+  await run();
+  await new Promise(() => {});
 }
 
 main().catch((error: unknown) => {

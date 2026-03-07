@@ -25,7 +25,7 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "gen:example": "node ./dist/cli.js --input example/data-gen.ts"
+    "gen:example": "bun ./dist/cli.js --input example/data-gen.ts"
   },
   "devDependencies": {
     "@types/node": "^24.6.0"

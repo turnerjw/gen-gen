@@ -33,6 +33,7 @@ Options:
 - `--cwd <path>`: working directory to resolve `--input`
 - `--check`: exits with code `1` if the generated section is stale
 - `--dry-run`: print resulting file contents instead of writing
+- `-w, --watch`: run continuously and regenerate on changes
 
 ## Vite plugin
 

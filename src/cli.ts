@@ -9,6 +9,7 @@ interface CliOptions {
   check: boolean;
   dryRun: boolean;
   watch: boolean;
+  deepMerge: boolean;
 }
 
 async function main(): Promise<void> {
@@ -33,6 +34,7 @@ async function main(): Promise<void> {
     input: options.input,
     cwd: options.cwd,
     write: !options.dryRun && !options.check,
+    deepMerge: options.deepMerge,
   });
 
   for (const warning of result.warnings) {
@@ -64,6 +66,7 @@ function parseArgs(args: string[]): CliOptions {
     check: false,
     dryRun: false,
     watch: false,
+    deepMerge: false,
   };
 
   for (let i = 0; i < args.length; i += 1) {
@@ -96,6 +99,11 @@ function parseArgs(args: string[]): CliOptions {
       continue;
     }
 
+    if (arg === "--deep-merge") {
+      options.deepMerge = true;
+      continue;
+    }
+
     throw new Error(`Unknown argument: ${arg}`);
   }
 
@@ -114,6 +122,7 @@ Options:
       --check         Exit 1 if generated section is out of date
       --dry-run       Print resulting file content to stdout
   -w, --watch         Regenerate on file changes
+      --deep-merge    Deep merge overrides instead of shallow spread
   -h, --help          Show this help message
 `);
 }
@@ -165,6 +174,7 @@ async function runWatchMode(options: CliOptions): Promise<void> {
         input: options.input,
         cwd: options.cwd,
         write: true,
+        deepMerge: options.deepMerge,
       });
 
       for (const warning of result.warnings) {

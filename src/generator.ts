@@ -7,6 +7,7 @@ export interface GenerateOptions {
   cwd?: string;
   markerText?: string;
   write?: boolean;
+  deepMerge?: boolean;
 }
 
 export interface GenerateResult {
@@ -49,7 +50,7 @@ export async function generateDataFile(options: GenerateOptions = {}): Promise<G
 
   const original = await fs.readFile(inputPath, "utf8");
   const parsed = parseTargets(inputPath);
-  const generated = emitFunctions(parsed.targets, parsed.checker, parsed.sourceFile);
+  const generated = emitFunctions(parsed.targets, parsed.checker, parsed.sourceFile, options.deepMerge ?? false);
 
   let next = ensureFakerImport(original);
   next = replaceGeneratedSection(next, generated, markerText);
@@ -215,7 +216,7 @@ function dedupeTargets(targets: TargetSpec[]): TargetSpec[] {
   return [...byTypeText.values()];
 }
 
-function emitFunctions(targets: TargetSpec[], checker: ts.TypeChecker, sourceFile: ts.SourceFile): string {
+function emitFunctions(targets: TargetSpec[], checker: ts.TypeChecker, sourceFile: ts.SourceFile, deepMerge: boolean): string {
   const typeToFunctionName = new Map<string, string>();
 
   for (const target of targets) {
@@ -231,7 +232,7 @@ function emitFunctions(targets: TargetSpec[], checker: ts.TypeChecker, sourceFil
     maxDepth: 8,
   };
 
-  const sections: string[] = [emitSharedHelperRuntime()];
+  const sections: string[] = [emitSharedHelperRuntime(deepMerge)];
   sections.push(...targets.map((target) => emitFunction(target, context)));
   return sections.join("\n\n");
 }
@@ -276,7 +277,11 @@ function emitObjectLiteral(
   return lines.join("\n");
 }
 
-function emitSharedHelperRuntime(): string {
+function emitSharedHelperRuntime(deepMerge: boolean): string {
+  const returnLine = deepMerge
+    ? "    return __genGenMergeDeep(base, resolvedOverrides);"
+    : "    return { ...base, ...resolvedOverrides };";
+
   return [
     "type __GenGenPlainObject<T> = T extends object",
     "  ? T extends readonly unknown[]",
@@ -298,16 +303,51 @@ function emitSharedHelperRuntime(): string {
     "",
     "type GenGenOverrides<T extends object> = Partial<T> | ((helpers: GenGenHelpers<T>) => Partial<T>);",
     "",
-    "function __genGenCreateHelper<T extends object>(base: T): (overrides?: GenGenOverrides<T>) => T {",
-    "  return (overrides) => {",
+    "function __genGenIsMergeable(value: unknown): value is Record<string, unknown> {",
+    "  return !!value && typeof value === \"object\" && !Array.isArray(value) && !(value instanceof Date);",
+    "}",
+    "",
+    "function __genGenMergeDeep<T>(base: T, overrides: Partial<T> | undefined): T {",
+    "  if (!overrides) {",
+    "    return base;",
+    "  }",
+    "",
+    "  if (!__genGenIsMergeable(base) || !__genGenIsMergeable(overrides)) {",
+    "    return overrides as T;",
+    "  }",
+    "",
+    "  const result: Record<string, unknown> = { ...base };",
+    "  for (const [key, overrideValue] of Object.entries(overrides)) {",
+    "    const baseValue = result[key];",
+    "    if (__genGenIsMergeable(baseValue) && __genGenIsMergeable(overrideValue)) {",
+    "      result[key] = __genGenMergeDeep(baseValue, overrideValue);",
+    "      continue;",
+    "    }",
+    "",
+    "    result[key] = overrideValue;",
+    "  }",
+    "",
+    "  return result as T;",
+    "}",
+    "",
+    "function __genGenCreateHelper<T extends object>(",
+    "  base: T,",
+    "  helperCache: WeakMap<object, unknown> = new WeakMap(),",
+    "): (overrides?: GenGenOverrides<T>) => T {",
+    "  const cached = helperCache.get(base as object);",
+    "  if (cached) {",
+    "    return cached as (overrides?: GenGenOverrides<T>) => T;",
+    "  }",
+    "",
+    "  const generate = (overrides?: GenGenOverrides<T>): T => {",
     "    const helpers = {} as GenGenHelpers<T>;",
     "    for (const [key, value] of Object.entries(base as Record<string, unknown>)) {",
-    "      if (!value || typeof value !== \"object\" || Array.isArray(value) || value instanceof Date) {",
+    "      if (!__genGenIsMergeable(value)) {",
     "        continue;",
     "      }",
     "",
     "      const helperName = `generate${key[0]?.toUpperCase() ?? \"\"}${key.slice(1)}`;",
-    "      (helpers as Record<string, unknown>)[helperName] = __genGenCreateHelper(value as object);",
+    "      (helpers as Record<string, unknown>)[helperName] = __genGenCreateHelper(value, helperCache);",
     "    }",
     "",
     "    const resolvedOverrides: Partial<T> | undefined =",
@@ -315,11 +355,11 @@ function emitSharedHelperRuntime(): string {
     "        ? (overrides as (nestedHelpers: GenGenHelpers<T>) => Partial<T>)(helpers)",
     "        : overrides;",
     "",
-    "    return {",
-    "      ...base,",
-    "      ...resolvedOverrides,",
-    "    };",
+    returnLine,
     "  };",
+    "",
+    "  helperCache.set(base as object, generate);",
+    "  return generate;",
     "}",
   ].join("\n");
 }

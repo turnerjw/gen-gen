@@ -4,6 +4,7 @@ import {generateDataFile, type GenerateResult} from "./generator.js";
 export interface GenGenPluginOptions {
   input?: string;
   markerText?: string;
+  deepMerge?: boolean;
 }
 
 interface ViteLikePluginContext {
@@ -29,6 +30,7 @@ export function genGenPlugin(options: GenGenPluginOptions = {}) {
       cwd: root,
       markerText: options.markerText,
       write,
+      deepMerge: options.deepMerge,
     });
 
     watchedFiles.clear();

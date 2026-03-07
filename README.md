@@ -48,6 +48,69 @@ Options:
 - `--check`: exits with code `1` if the generated section is stale
 - `--dry-run`: print resulting file contents instead of writing
 - `-w, --watch`: run continuously and regenerate on changes
+- `--deep-merge`: merge overrides deeply instead of shallow spread
+
+### Deep Merge Behavior
+
+By default, generated functions merge overrides with a shallow spread.
+
+Default (shallow):
+
+```ts
+return {
+  ...base,
+  ...overrides,
+};
+```
+
+With `--deep-merge` (or plugin `deepMerge: true`), nested objects are merged recursively.
+
+Deep merge:
+
+```ts
+return mergeDeep(base, overrides);
+```
+
+Example with nested data:
+
+```ts
+type User = {
+  profile: {
+    name: string;
+    settings: {
+      theme: string;
+      locale: string;
+    };
+  };
+};
+```
+
+If you pass:
+
+```ts
+generateUser({
+  profile: {
+    settings: {
+      theme: "dark",
+    },
+  },
+});
+```
+
+- Shallow merge: `profile` is replaced by your override object (you may lose `profile.name` and `settings.locale` unless you provide them).
+- Deep merge: only `settings.theme` is replaced; other nested fields from generated defaults are preserved.
+
+When to enable deep merge:
+
+- You usually override nested fields via object literals.
+- You want partial nested overrides to preserve sibling defaults automatically.
+- Your test code prefers concise object overrides over helper callbacks.
+
+When to keep default shallow merge:
+
+- You want explicit replacement semantics at each top-level field.
+- You rely on full object replacement to avoid accidentally keeping stale nested defaults.
+- Your team already uses callback helpers for nested customization (`generateX(({generateY}) => ...)`).
 
 ## Vite plugin
 
@@ -56,7 +119,7 @@ import {defineConfig} from "vite";
 import {genGenPlugin} from "gen-gen";
 
 export default defineConfig({
-  plugins: [genGenPlugin({input: "data-gen.ts"})],
+  plugins: [genGenPlugin({input: "data-gen.ts", deepMerge: true})],
 });
 ```
 

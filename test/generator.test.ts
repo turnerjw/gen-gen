@@ -1,7 +1,7 @@
 import {afterEach, describe, expect, test} from "bun:test";
 import fs from "node:fs/promises";
-import os from "node:os";
 import path from "node:path";
+import {pathToFileURL} from "node:url";
 
 import {generateDataFile} from "../src/generator.js";
 
@@ -16,7 +16,9 @@ afterEach(async () => {
 });
 
 async function createFixture(files: Record<string, string>): Promise<string> {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), "gen-gen-test-"));
+  const tempRoot = path.join(process.cwd(), ".tmp");
+  await fs.mkdir(tempRoot, {recursive: true});
+  const root = await fs.mkdtemp(path.join(tempRoot, "gen-gen-test-"));
   tempDirs.push(root);
 
   await Promise.all(
@@ -89,11 +91,61 @@ import type { Deep } from "./types";
 
     expect(result.content).toContain("type GenGenHelpers<T extends object>");
     expect(result.content).toContain("type GenGenOverrides<T extends object>");
-    expect(result.content).toContain("function __genGenCreateHelper<T extends object>(base: T)");
+    expect(result.content).toContain("function __genGenCreateHelper<T extends object>(");
+    expect(result.content).toContain("helperCache: WeakMap<object, unknown> = new WeakMap()");
+    expect(result.content).toContain("const cached = helperCache.get(base as object);");
     expect(result.content).toContain("export type GenerateDeepCallbackParam = (helpers: GenGenHelpers<Deep>) => Partial<Deep>;");
     expect(result.content).toContain("return generate(overrides);");
     expect(result.content).toContain("f: faker.word.noun()");
     expect(result.content).toContain("g: faker.number.int({ min: 1, max: 1000 })");
+  });
+
+  test("deepMerge mode preserves nested sibling values at runtime", async () => {
+    const cwd = await createFixture({
+      "types.ts": `
+export type Deep = {
+  a: string;
+  b: {
+    c: number;
+    e: {
+      f: string;
+      g: number;
+    };
+  };
+};
+`,
+      "data-gen.ts": `
+import type { Deep } from "./types";
+
+/**
+ * Generated below - DO NOT EDIT
+ */
+`,
+    });
+
+    const result = await generateDataFile({cwd, write: true, deepMerge: true});
+    expect(result.content).toContain("function __genGenMergeDeep<T>(base: T, overrides: Partial<T> | undefined): T {");
+    expect(result.content).toContain("return __genGenMergeDeep(base, resolvedOverrides);");
+
+    const moduleUrl = `${pathToFileURL(path.join(cwd, "data-gen.ts")).href}?t=${Date.now()}`;
+    const generatedModule = (await import(moduleUrl)) as {
+      generateDeep(overrides?: unknown): {
+        a: string;
+        b: {c: number; e: {f: string; g: number}};
+      };
+    };
+
+    const value = generatedModule.generateDeep({
+      b: {
+        e: {
+          f: "override",
+        },
+      },
+    });
+
+    expect(value.b.c).toEqual(expect.any(Number));
+    expect(value.b.e.f).toBe("override");
+    expect(value.b.e.g).toEqual(expect.any(Number));
   });
 
   test("adds faker import when missing and does not duplicate it", async () => {

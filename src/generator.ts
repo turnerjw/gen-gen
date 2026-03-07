@@ -231,23 +231,23 @@ function emitFunctions(targets: TargetSpec[], checker: ts.TypeChecker, sourceFil
     maxDepth: 8,
   };
 
-  return targets.map((target) => emitFunction(target, context)).join("\n\n");
+  const sections: string[] = [emitSharedHelperRuntime()];
+  sections.push(...targets.map((target) => emitFunction(target, context)));
+  return sections.join("\n\n");
 }
 
 function emitFunction(target: TargetSpec, context: GenerationContext): string {
   const callbackTypeName = `${toPascalCase(target.functionName)}CallbackParam`;
-  const nestedHelpers = collectNestedHelpers(target, context);
-  const callbackType = emitCallbackType(target, callbackTypeName, nestedHelpers);
-  const resolvedOverrides = emitResolvedOverrides(target, nestedHelpers, callbackTypeName);
-  const body = emitObjectLiteral(target.type, context, 1, target.typeText, "resolvedOverrides");
-  const returnBlock = formatReturnBlock(body);
+  const body = emitObjectLiteral(target.type, context, 1, target.typeText);
+  const baseBlock = formatAssignmentBlock(`  const base: ${target.typeText} =`, body);
 
   return [
-    callbackType,
+    `export type ${callbackTypeName} = (helpers: GenGenHelpers<${target.typeText}>) => Partial<${target.typeText}>;`,
     ``,
     `export function ${target.functionName}(overrides?: Partial<${target.typeText}> | ${callbackTypeName}): ${target.typeText} {`,
-    resolvedOverrides,
-    returnBlock,
+    baseBlock,
+    `  const generate = __genGenCreateHelper(base);`,
+    `  return generate(overrides);`,
     `}`,
   ].join("\n");
 }
@@ -257,7 +257,6 @@ function emitObjectLiteral(
   context: GenerationContext,
   depth: number,
   fallbackTypeText: string,
-  overridesVariableName: string,
 ): string {
   const checker = context.checker;
   const properties = checker.getPropertiesOfType(type);
@@ -272,10 +271,57 @@ function emitObjectLiteral(
     lines.push(`  ${propertyName}: ${expression},`);
   }
 
-  lines.push(`  ...${overridesVariableName}`);
   lines.push("}");
 
   return lines.join("\n");
+}
+
+function emitSharedHelperRuntime(): string {
+  return [
+    "type __GenGenPlainObject<T> = T extends object",
+    "  ? T extends readonly unknown[]",
+    "    ? never",
+    "    : T extends (...args: any[]) => any",
+    "      ? never",
+    "      : T extends Date",
+    "        ? never",
+    "        : T",
+    "  : never;",
+    "",
+    "type GenGenHelpers<T extends object> = {",
+    "  [K in keyof T as __GenGenPlainObject<NonNullable<T[K]>> extends never",
+    "    ? never",
+    "    : `generate${Capitalize<string & K>}`]: (",
+    "      overrides?: GenGenOverrides<__GenGenPlainObject<NonNullable<T[K]>>>,",
+    "    ) => __GenGenPlainObject<NonNullable<T[K]>>;",
+    "};",
+    "",
+    "type GenGenOverrides<T extends object> = Partial<T> | ((helpers: GenGenHelpers<T>) => Partial<T>);",
+    "",
+    "function __genGenCreateHelper<T extends object>(base: T): (overrides?: GenGenOverrides<T>) => T {",
+    "  return (overrides) => {",
+    "    const helpers = {} as GenGenHelpers<T>;",
+    "    for (const [key, value] of Object.entries(base as Record<string, unknown>)) {",
+    "      if (!value || typeof value !== \"object\" || Array.isArray(value) || value instanceof Date) {",
+    "        continue;",
+    "      }",
+    "",
+    "      const helperName = `generate${key[0]?.toUpperCase() ?? \"\"}${key.slice(1)}`;",
+    "      (helpers as Record<string, unknown>)[helperName] = __genGenCreateHelper(value as object);",
+    "    }",
+    "",
+    "    const resolvedOverrides: Partial<T> | undefined =",
+    "      typeof overrides === \"function\"",
+    "        ? (overrides as (nestedHelpers: GenGenHelpers<T>) => Partial<T>)(helpers)",
+    "        : overrides;",
+    "",
+    "    return {",
+    "      ...base,",
+    "      ...resolvedOverrides,",
+    "    };",
+    "  };",
+    "}",
+  ].join("\n");
 }
 
 function emitExpression(type: ts.Type, context: GenerationContext, depth: number, fallbackTypeText: string): string {
@@ -686,5 +732,22 @@ function formatReturnBlock(objectLiteral: string): string {
   const last = output[output.length - 1];
   output[output.length - 1] = `${last};`;
 
+  return output.join("\n");
+}
+
+function formatAssignmentBlock(prefix: string, objectLiteral: string): string {
+  const lines = objectLiteral.split("\n");
+  if (lines.length === 0) {
+    return `${prefix} {};`;
+  }
+
+  const [first, ...rest] = lines;
+  const output = [`${prefix} ${first}`];
+  for (const line of rest) {
+    output.push(`  ${line}`);
+  }
+
+  const last = output[output.length - 1];
+  output[output.length - 1] = `${last};`;
   return output.join("\n");
 }

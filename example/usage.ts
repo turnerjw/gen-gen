@@ -5,7 +5,7 @@ const data = generateUnnamedNestedExample({a: "test"});
 console.log(data);
 
 const dataWithCallback = generateUnnamedNestedExample(({ generateB }) => ({
-    b: generateB({ c: 42 })
+    b: generateB(() => ({}))
 }));
 
 console.log(dataWithCallback);

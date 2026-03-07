@@ -1,4 +1,4 @@
-import type {Pokeball, Party, APIResponse, Pokemon} from "./types";
+import type {UnnamedNestedExample} from "./types";
 
 import {faker} from "@faker-js/faker";
 
@@ -6,42 +6,38 @@ import {faker} from "@faker-js/faker";
  * Add concrete generics here to generate functions for them
  */
 type ConcreteGenerics = [
-    APIResponse<Pokemon>,
 ]
 
 /**
  * Generated below - DO NOT EDIT
  */
 
-export function generatePokeball(overrides?: Partial<Pokeball>): Pokeball {
-  return {
-    type: faker.word.noun(),
-    pokemon: faker.datatype.boolean() ? generatePokemon() : null,
-    ...overrides
-  };
-}
+export type GenerateUnnamedNestedExampleCallbackParam = (helpers: { generateB: (overrides?: Partial<UnnamedNestedExample["b"]>) => UnnamedNestedExample["b"]; }) => Partial<UnnamedNestedExample>;
 
-export function generateParty(overrides?: Partial<Party>): Party {
+export function generateUnnamedNestedExample(overrides?: Partial<UnnamedNestedExample> | GenerateUnnamedNestedExampleCallbackParam): UnnamedNestedExample {
+  const resolvedOverrides: Partial<UnnamedNestedExample> | undefined =
+    typeof overrides === "function"
+      ? (overrides as GenerateUnnamedNestedExampleCallbackParam)({
+          generateB: (nestedOverrides?: Partial<UnnamedNestedExample["b"]>) => ({ ...{
+  c: faker.number.int({ min: 1, max: 1000 }),
+  d: faker.datatype.boolean(),
+  e: {
+  f: faker.word.noun(),
+  g: faker.number.int({ min: 1, max: 1000 }),
+},
+}, ...nestedOverrides }) as UnnamedNestedExample["b"],
+        })
+      : overrides;
   return {
-    name: faker.word.noun(),
-    members: Array.from({ length: faker.number.int({ min: 1, max: 3 }) }, () => generatePokemon()),
-    ...overrides
-  };
-}
-
-export function generatePokemon(overrides?: Partial<Pokemon>): Pokemon {
-  return {
-    id: faker.number.int({ min: 1, max: 1000 }),
-    name: faker.word.noun(),
-    type: faker.word.noun(),
-    ...overrides
-  };
-}
-
-export function generatePokemonAPIResponse(overrides?: Partial<APIResponse<Pokemon>>): APIResponse<Pokemon> {
-  return {
-    data: generatePokemon(),
-    error: faker.datatype.boolean() ? faker.word.noun() : undefined,
-    ...overrides
+    a: faker.word.noun(),
+    b: {
+    c: faker.number.int({ min: 1, max: 1000 }),
+    d: faker.datatype.boolean(),
+    e: {
+    f: faker.word.noun(),
+    g: faker.number.int({ min: 1, max: 1000 }),
+  },
+  },
+    ...resolvedOverrides
   };
 }

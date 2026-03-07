@@ -23,6 +23,13 @@ interface TargetSpec {
   type: ts.Type;
 }
 
+interface NestedHelperSpec {
+  helperName: string;
+  propertyName: string;
+  typeExpression: string;
+  baseExpression: string;
+}
+
 interface GenerationContext {
   checker: ts.TypeChecker;
   sourceFile: ts.SourceFile;
@@ -221,24 +228,37 @@ function emitFunctions(targets: TargetSpec[], checker: ts.TypeChecker, sourceFil
     sourceFile,
     typeToFunctionName,
     activeTypes: new Set<string>(),
-    maxDepth: 4,
+    maxDepth: 8,
   };
 
   return targets.map((target) => emitFunction(target, context)).join("\n\n");
 }
 
 function emitFunction(target: TargetSpec, context: GenerationContext): string {
-  const body = emitObjectLiteral(target.type, context, 1, target.typeText);
+  const callbackTypeName = `${toPascalCase(target.functionName)}CallbackParam`;
+  const nestedHelpers = collectNestedHelpers(target, context);
+  const callbackType = emitCallbackType(target, callbackTypeName, nestedHelpers);
+  const resolvedOverrides = emitResolvedOverrides(target, nestedHelpers, callbackTypeName);
+  const body = emitObjectLiteral(target.type, context, 1, target.typeText, "resolvedOverrides");
   const returnBlock = formatReturnBlock(body);
 
   return [
-    `export function ${target.functionName}(overrides?: Partial<${target.typeText}>): ${target.typeText} {`,
+    callbackType,
+    ``,
+    `export function ${target.functionName}(overrides?: Partial<${target.typeText}> | ${callbackTypeName}): ${target.typeText} {`,
+    resolvedOverrides,
     returnBlock,
     `}`,
   ].join("\n");
 }
 
-function emitObjectLiteral(type: ts.Type, context: GenerationContext, depth: number, fallbackTypeText: string): string {
+function emitObjectLiteral(
+  type: ts.Type,
+  context: GenerationContext,
+  depth: number,
+  fallbackTypeText: string,
+  overridesVariableName: string,
+): string {
   const checker = context.checker;
   const properties = checker.getPropertiesOfType(type);
 
@@ -252,7 +272,7 @@ function emitObjectLiteral(type: ts.Type, context: GenerationContext, depth: num
     lines.push(`  ${propertyName}: ${expression},`);
   }
 
-  lines.push("  ...overrides");
+  lines.push(`  ...${overridesVariableName}`);
   lines.push("}");
 
   return lines.join("\n");
@@ -260,10 +280,6 @@ function emitObjectLiteral(type: ts.Type, context: GenerationContext, depth: num
 
 function emitExpression(type: ts.Type, context: GenerationContext, depth: number, fallbackTypeText: string): string {
   const checker = context.checker;
-
-  if (depth > context.maxDepth) {
-    return `{} as ${fallbackTypeText}`;
-  }
 
   if (type.isStringLiteral()) {
     return JSON.stringify(type.value);
@@ -338,6 +354,20 @@ function emitExpression(type: ts.Type, context: GenerationContext, depth: number
     return "undefined";
   }
 
+  const normalizedTypeText = checker.typeToString(type, context.sourceFile, ts.TypeFormatFlags.NoTruncation);
+  if (normalizedTypeText === "string") {
+    return "faker.word.noun()";
+  }
+  if (normalizedTypeText === "number") {
+    return "faker.number.int({ min: 1, max: 1000 })";
+  }
+  if (normalizedTypeText === "boolean") {
+    return "faker.datatype.boolean()";
+  }
+  if (normalizedTypeText === "bigint") {
+    return "BigInt(faker.number.int({ min: 1, max: 1000 }))";
+  }
+
   if (checker.isArrayType(type) || checker.isTupleType(type)) {
     const ref = type as ts.TypeReference;
     const [itemType] = checker.getTypeArguments(ref);
@@ -348,7 +378,7 @@ function emitExpression(type: ts.Type, context: GenerationContext, depth: number
     return `Array.from({ length: faker.number.int({ min: 1, max: 3 }) }, () => ${itemExpression})`;
   }
 
-  const typeText = checker.typeToString(type, context.sourceFile, ts.TypeFormatFlags.NoTruncation);
+  const typeText = normalizedTypeText;
   const generatorName = context.typeToFunctionName.get(typeText);
   if (generatorName) {
     return `${generatorName}()`;
@@ -367,6 +397,10 @@ function emitExpression(type: ts.Type, context: GenerationContext, depth: number
   }
 
   if ((type.flags & ts.TypeFlags.Object) !== 0) {
+    if (depth > context.maxDepth) {
+      return `{} as ${typeText}`;
+    }
+
     if (context.activeTypes.has(typeText)) {
       return `{} as ${typeText}`;
     }
@@ -378,6 +412,116 @@ function emitExpression(type: ts.Type, context: GenerationContext, depth: number
   }
 
   return `{} as ${typeText}`;
+}
+
+function emitCallbackType(target: TargetSpec, callbackTypeName: string, nestedHelpers: NestedHelperSpec[]): string {
+  if (nestedHelpers.length === 0) {
+    return `export type ${callbackTypeName} = () => Partial<${target.typeText}>;`;
+  }
+
+  const fields = nestedHelpers.map((helper) => {
+    return `${helper.helperName}: (overrides?: Partial<${helper.typeExpression}>) => ${helper.typeExpression};`;
+  });
+
+  return `export type ${callbackTypeName} = (helpers: { ${fields.join(" ")} }) => Partial<${target.typeText}>;`;
+}
+
+function emitResolvedOverrides(target: TargetSpec, nestedHelpers: NestedHelperSpec[], callbackTypeName: string): string {
+  if (nestedHelpers.length === 0) {
+    return [
+      `  const resolvedOverrides: Partial<${target.typeText}> | undefined =`,
+      `    typeof overrides === "function" ? (overrides as ${callbackTypeName})() : overrides;`,
+    ].join("\n");
+  }
+
+  const helperEntries = nestedHelpers.map((helper) => {
+    return `${helper.helperName}: (nestedOverrides?: Partial<${helper.typeExpression}>) => ({ ...${helper.baseExpression}, ...nestedOverrides }) as ${helper.typeExpression},`;
+  });
+
+  return [
+    `  const resolvedOverrides: Partial<${target.typeText}> | undefined =`,
+    `    typeof overrides === "function"`,
+    `      ? (overrides as ${callbackTypeName})({`,
+    ...helperEntries.map((entry) => `          ${entry}`),
+    `        })`,
+    `      : overrides;`,
+  ].join("\n");
+}
+
+function collectNestedHelpers(target: TargetSpec, context: GenerationContext): NestedHelperSpec[] {
+  const checker = context.checker;
+  const properties = checker.getPropertiesOfType(target.type);
+  const helpers: NestedHelperSpec[] = [];
+
+  for (const property of properties) {
+    const declaration = property.valueDeclaration ?? property.declarations?.[0] ?? context.sourceFile;
+    const propertyType = checker.getTypeOfSymbolAtLocation(property, declaration);
+    const objectType = extractObjectType(propertyType);
+    if (!objectType) {
+      continue;
+    }
+
+    const propertyName = property.name;
+    const helperName = `generate${toPascalCase(propertyName)}`;
+    const typeExpression = `${target.typeText}[${JSON.stringify(propertyName)}]`;
+    const baseExpression = emitExpression(objectType, context, 2, typeExpression);
+
+    helpers.push({
+      helperName,
+      propertyName,
+      typeExpression,
+      baseExpression,
+    });
+  }
+
+  return dedupeNestedHelpers(helpers);
+}
+
+function dedupeNestedHelpers(helpers: NestedHelperSpec[]): NestedHelperSpec[] {
+  const seen = new Set<string>();
+  const deduped: NestedHelperSpec[] = [];
+
+  for (const helper of helpers) {
+    if (seen.has(helper.helperName)) {
+      continue;
+    }
+    seen.add(helper.helperName);
+    deduped.push(helper);
+  }
+
+  return deduped;
+}
+
+function extractObjectType(type: ts.Type): ts.Type | null {
+  if ((type.flags & ts.TypeFlags.Union) !== 0) {
+    const union = type as ts.UnionType;
+    const concreteMembers = union.types.filter(
+      (member) => (member.flags & ts.TypeFlags.Null) === 0 && (member.flags & ts.TypeFlags.Undefined) === 0,
+    );
+    if (concreteMembers.length !== 1) {
+      return null;
+    }
+    const concreteMember = concreteMembers[0];
+    if (!concreteMember) {
+      return null;
+    }
+    return extractObjectType(concreteMember);
+  }
+
+  if ((type.flags & ts.TypeFlags.Object) === 0) {
+    return null;
+  }
+
+  const checkerType = type as ts.ObjectType;
+  if ((checkerType.objectFlags & ts.ObjectFlags.Reference) !== 0) {
+    return type;
+  }
+
+  if ((checkerType.objectFlags & ts.ObjectFlags.Tuple) !== 0) {
+    return null;
+  }
+
+  return type;
 }
 
 function emitInlineObject(type: ts.Type, context: GenerationContext, depth: number, typeText: string): string {
@@ -497,6 +641,26 @@ function getEntityNameText(entityName: ts.EntityName): string {
 function sanitizeIdentifier(value: string): string {
   const cleaned = value.replace(/[^a-zA-Z0-9_$]/g, "");
   return cleaned.length > 0 ? cleaned : "Type";
+}
+
+function toPascalCase(value: string): string {
+  const parts = value
+    .split(/[^a-zA-Z0-9]+/)
+    .filter((part) => part.length > 0)
+    .map((part) => {
+      const first = part[0];
+      if (!first) {
+        return "";
+      }
+      return first.toUpperCase() + part.slice(1);
+    });
+
+  const joined = parts.join("");
+  if (joined.length > 0) {
+    return joined;
+  }
+
+  return sanitizeIdentifier(value);
 }
 
 function isDateType(type: ts.Type): boolean {

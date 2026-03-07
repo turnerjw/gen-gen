@@ -15,6 +15,20 @@ export function generatePokemon(overrides?: Partial<Pokemon>): Pokemon {
 }
 ```
 
+Generated functions accept either:
+
+- `Partial<T>` overrides, or
+- a callback that receives nested generator helpers and returns `Partial<T>`.
+
+Example:
+
+```ts
+const data = generateUnnamedNestedExample(({generateB}) => ({
+  a: "Test",
+  b: generateB({d: true}),
+}));
+```
+
 ## Install
 
 ```bash

@@ -18,3 +18,15 @@ export type APIResponse<T> = {
     data: T;
     error?: string;
 }
+
+export type UnnamedNestedExample = {
+    a: string;
+    b: {
+        c: number;
+        d: boolean;
+        e: {
+            f: string;
+            g: number;
+        }
+    }
+}

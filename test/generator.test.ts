@@ -369,4 +369,71 @@ type ExcludeGenerators = [Wrapper<A>];
     expect(result.content).not.toContain("export function generateB(");
     expect(result.content).not.toContain("export function generateAWrapper(");
   });
+
+  test("applies FakerOverrides from source file for path and type keys", async () => {
+    const cwd = await createFixture({
+      "types.ts": `
+export type UserId = string;
+export type User = {
+  id: UserId;
+  email: string;
+  profile: {
+    locale: string;
+  };
+};
+`,
+      "data-gen.ts": `
+import type { User, UserId } from "./types";
+
+const FakerOverrides = {
+  email: () => faker.internet.email(),
+  "User.id": () => faker.string.uuid(),
+  "User.profile.locale": () => faker.helpers.arrayElement(["en-CA", "fr-CA"]),
+} as const;
+
+/**
+ * Generated below - DO NOT EDIT
+ */
+`,
+    });
+
+    const result = await generateDataFile({cwd, write: false});
+
+    expect(result.warnings).toContain('Skipped imported type "UserId": only object types are supported for generators.');
+    expect(result.content).toContain("id: (() => faker.string.uuid())()");
+    expect(result.content).toContain("email: (() => faker.internet.email())()");
+    expect(result.content).toContain("locale: (() => faker.helpers.arrayElement([\"en-CA\", \"fr-CA\"]))()");
+    expect(result.content).toContain("export function generateUser(");
+    expect(result.content).not.toContain("export function generateUserId(");
+  });
+
+  test("applies FakerOverrides passed via GenerateOptions", async () => {
+    const cwd = await createFixture({
+      "types.ts": `
+export type User = {
+  name: string;
+  age: number;
+};
+`,
+      "data-gen.ts": `
+import type { User } from "./types";
+
+/**
+ * Generated below - DO NOT EDIT
+ */
+`,
+    });
+
+    const result = await generateDataFile({
+      cwd,
+      write: false,
+      fakerOverrides: {
+        name: (faker) => faker.person.firstName(),
+        age: "42",
+      },
+    });
+
+    expect(result.content).toContain("name: ((faker) => faker.person.firstName())(faker)");
+    expect(result.content).toContain("age: 42");
+  });
 });

@@ -1,5 +1,5 @@
 import path from "node:path";
-import {generateDataFile, type GenerateResult} from "./generator.js";
+import {generateDataFile, type FakerOverrideInput, type GenerateResult} from "./generator.js";
 
 export interface GenGenPluginOptions {
   input?: string;
@@ -7,6 +7,7 @@ export interface GenGenPluginOptions {
   deepMerge?: boolean;
   include?: string[];
   exclude?: string[];
+  fakerOverrides?: Record<string, FakerOverrideInput>;
 }
 
 interface ViteLikePluginContext {
@@ -35,6 +36,7 @@ export function genGenPlugin(options: GenGenPluginOptions = {}) {
       deepMerge: options.deepMerge,
       include: options.include,
       exclude: options.exclude,
+      fakerOverrides: options.fakerOverrides,
     });
 
     watchedFiles.clear();

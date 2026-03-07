@@ -57,6 +57,7 @@ Options:
 - `--deep-merge`: merge overrides deeply instead of shallow spread
 - `--include`: comma-separated filters to include specific generators/types
 - `--exclude`: comma-separated filters to exclude specific generators/types
+- `--faker-override`: `key=expression` override for generated values (repeatable, CLI)
 
 ### Deep Merge Behavior
 
@@ -127,7 +128,16 @@ import {defineConfig} from "vite";
 import {genGenPlugin} from "gen-gen";
 
 export default defineConfig({
-  plugins: [genGenPlugin({input: "data-gen.ts", deepMerge: true})],
+  plugins: [
+    genGenPlugin({
+      input: "data-gen.ts",
+      deepMerge: true,
+      include: ["User", "Account"],
+      fakerOverrides: {
+        email: "faker.internet.email()",
+      },
+    }),
+  ],
 });
 ```
 
@@ -140,7 +150,8 @@ The input file should:
 1. Import the types you want factories for.
 2. Optionally define `type ConcreteGenerics = [...]` to specify concrete generic instantiations.
 3. Optionally define `type IncludeGenerators = [...]` / `type ExcludeGenerators = [...]` to filter generated targets.
-4. Include a marker comment containing `Generated below - DO NOT EDIT`.
+4. Optionally define `const FakerOverrides = { ... }` for per-field/per-type faker expressions.
+5. Include a marker comment containing `Generated below - DO NOT EDIT`.
 
 Example:
 
@@ -160,6 +171,12 @@ type ExcludeGenerators = [
   APIResponse<Pokemon>
 ];
 
+const FakerOverrides = {
+  email: () => faker.internet.email(),
+  "Pokemon.id": () => faker.number.int({ min: 10000, max: 99999 }),
+  "APIResponse<Pokemon>": () => ({ data: generatePokemon(), error: undefined }),
+} as const;
+
 /**
  * Generated below - DO NOT EDIT
  */
@@ -169,6 +186,23 @@ Filter matching accepts type text and generator names. For example:
 
 - `--include Pokemon,generateParty`
 - `--exclude APIResponse<Pokemon>,generatePokemonAPIResponse`
+
+Use function values in `FakerOverrides` (and plugin/API `fakerOverrides`) for type-safe expressions. String values from CLI are still supported for convenience.
+
+Faker override keys are matched in this order:
+
+1. `<RootType>.<path.to.field>` (for example `Pokemon.id`)
+2. `path.to.field` (for example `profile.locale`)
+3. final property name (for example `email`)
+4. type text (for example `APIResponse<Pokemon>`)
+
+CLI example:
+
+```bash
+gen-gen --input data-gen.ts \\
+  --faker-override email=faker.internet.email() \\
+  --faker-override Pokemon.id=faker.number.int({min:10000,max:99999})
+```
 
 ### Generic naming
 

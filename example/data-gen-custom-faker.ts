@@ -1,16 +1,16 @@
-import type {Account, Envelope, Profile, Session} from "./filters-types";
+import type {CustomFakerExample} from "./custom-faker-types";
 import {faker} from "@faker-js/faker";
+
+const FakerOverrides = {
+  "CustomFakerExample.id": () => faker.string.uuid(),
+  email: () => faker.internet.email(),
+  "CustomFakerExample.createdAt": () => faker.date.recent().toISOString(),
+} as const;
 
 /**
  * Add concrete generics here to generate functions for them
  */
-type ConcreteGenerics = [Envelope<Session>];
-
-// Keep only these targets from this file.
-type IncludeGenerators = [Account, Session, Envelope<Session>];
-
-// Remove a specific target even if it was included above.
-type ExcludeGenerators = [Envelope<Session>];
+type ConcreteGenerics = [];
 
 /**
  * Generated below - DO NOT EDIT
@@ -95,23 +95,13 @@ function __genGenCreateHelper<T extends object>(
   return generate;
 }
 
-export type GenerateAccountCallbackParam = (helpers: GenGenHelpers<Account>) => Partial<Account>;
+export type GenerateCustomFakerExampleCallbackParam = (helpers: GenGenHelpers<CustomFakerExample>) => Partial<CustomFakerExample>;
 
-export function generateAccount(overrides?: Partial<Account> | GenerateAccountCallbackParam): Account {
-  const base: Account = {
-    id: faker.number.int({ min: 1, max: 1000 }),
-    email: faker.word.noun(),
-  };
-  const generate = __genGenCreateHelper(base);
-  return generate(overrides);
-}
-
-export type GenerateSessionCallbackParam = (helpers: GenGenHelpers<Session>) => Partial<Session>;
-
-export function generateSession(overrides?: Partial<Session> | GenerateSessionCallbackParam): Session {
-  const base: Session = {
-    token: faker.word.noun(),
-    account: generateAccount(),
+export function generateCustomFakerExample(overrides?: Partial<CustomFakerExample> | GenerateCustomFakerExampleCallbackParam): CustomFakerExample {
+  const base: CustomFakerExample = {
+    id: (() => faker.string.uuid())(),
+    email: (() => faker.internet.email())(),
+    createdAt: (() => faker.date.recent().toISOString())(),
   };
   const generate = __genGenCreateHelper(base);
   return generate(overrides);

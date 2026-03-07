@@ -10,7 +10,10 @@ export interface GenerateOptions {
   deepMerge?: boolean;
   include?: string[];
   exclude?: string[];
+  fakerOverrides?: Record<string, FakerOverrideInput>;
 }
+
+export type FakerOverrideInput = string | ((faker: typeof import("@faker-js/faker").faker) => unknown);
 
 export interface GenerateResult {
   inputPath: string;
@@ -26,11 +29,9 @@ interface TargetSpec {
   type: ts.Type;
 }
 
-interface NestedHelperSpec {
-  helperName: string;
-  propertyName: string;
-  typeExpression: string;
-  baseExpression: string;
+interface FakerOverrideSpec {
+  expression: string;
+  invokeMode: "raw" | "call" | "callWithFaker";
 }
 
 interface GenerationContext {
@@ -39,6 +40,7 @@ interface GenerationContext {
   typeToFunctionName: Map<string, string>;
   activeTypes: Set<string>;
   maxDepth: number;
+  fakerOverrides: Map<string, FakerOverrideSpec>;
 }
 
 const DEFAULT_INPUT = "data-gen.ts";
@@ -54,8 +56,15 @@ export async function generateDataFile(options: GenerateOptions = {}): Promise<G
   const parsed = parseTargets(inputPath, {
     include: options.include ?? [],
     exclude: options.exclude ?? [],
+    fakerOverrides: options.fakerOverrides ?? {},
   });
-  const generated = emitFunctions(parsed.targets, parsed.checker, parsed.sourceFile, options.deepMerge ?? false);
+  const generated = emitFunctions(
+    parsed.targets,
+    parsed.checker,
+    parsed.sourceFile,
+    options.deepMerge ?? false,
+    parsed.fakerOverrides,
+  );
 
   let next = ensureFakerImport(original);
   next = replaceGeneratedSection(next, generated, markerText);
@@ -79,6 +88,7 @@ function parseTargets(
   filterOptions: {
     include: string[];
     exclude: string[];
+    fakerOverrides: Record<string, FakerOverrideInput>;
   },
 ): {
   sourceFile: ts.SourceFile;
@@ -86,6 +96,7 @@ function parseTargets(
   targets: TargetSpec[];
   warnings: string[];
   watchedFiles: string[];
+  fakerOverrides: Map<string, FakerOverrideSpec>;
 } {
   const compilerOptions: ts.CompilerOptions = {
     target: ts.ScriptTarget.ESNext,
@@ -114,6 +125,10 @@ function parseTargets(
   for (const node of concreteGenericNodes) {
     const type = checker.getTypeFromTypeNode(node);
     const typeText = node.getText(sourceFile);
+    if (!isGeneratableRootType(type, checker)) {
+      warnings.push(`Skipped ConcreteGenerics entry \"${typeText}\": only object types are supported for generators.`);
+      continue;
+    }
 
     targets.push({
       functionName: `generate${buildFunctionSuffixFromTypeNode(node)}`,
@@ -124,6 +139,15 @@ function parseTargets(
 
   const inFileInclude = collectTupleTypeEntries(sourceFile, "IncludeGenerators");
   const inFileExclude = collectTupleTypeEntries(sourceFile, "ExcludeGenerators");
+  const inFileFakerOverrides = collectFakerOverrides(sourceFile, warnings);
+  const fakerOverrides = new Map<string, FakerOverrideSpec>();
+  for (const [key, value] of Object.entries(inFileFakerOverrides)) {
+    fakerOverrides.set(normalizeFilterKey(key), value);
+  }
+  for (const [key, value] of Object.entries(filterOptions.fakerOverrides)) {
+    fakerOverrides.set(normalizeFilterKey(key), toFakerOverrideSpec(value));
+  }
+
   const uniqueTargets = dedupeTargets(targets);
   const filteredTargets = applyTargetFilters(uniqueTargets, {
     include: mergeFilters(filterOptions.include, inFileInclude),
@@ -141,6 +165,7 @@ function parseTargets(
     targets: filteredTargets,
     warnings,
     watchedFiles,
+    fakerOverrides,
   };
 }
 
@@ -175,10 +200,16 @@ function collectImportedTargets(
           continue;
         }
 
+        const resolvedType = checker.getDeclaredTypeOfSymbol(resolvedSymbol);
+        if (!isGeneratableRootType(resolvedType, checker)) {
+          warnings.push(`Skipped imported type \"${element.name.text}\": only object types are supported for generators.`);
+          continue;
+        }
+
         targets.push({
           functionName: `generate${element.name.text}`,
           typeText: element.name.text,
-          type: checker.getDeclaredTypeOfSymbol(resolvedSymbol),
+          type: resolvedType,
         });
       }
     }
@@ -225,6 +256,90 @@ function collectTupleTypeEntries(sourceFile: ts.SourceFile, aliasName: string): 
   }
 
   return [];
+}
+
+function collectFakerOverrides(sourceFile: ts.SourceFile, warnings: string[]): Record<string, FakerOverrideSpec> {
+  const overrides: Record<string, FakerOverrideSpec> = {};
+
+  for (const statement of sourceFile.statements) {
+    if (!ts.isVariableStatement(statement)) {
+      continue;
+    }
+
+    for (const declaration of statement.declarationList.declarations) {
+      if (!ts.isIdentifier(declaration.name) || declaration.name.text !== "FakerOverrides") {
+        continue;
+      }
+
+      const objectLiteral = declaration.initializer
+        ? unwrapObjectLiteralExpression(declaration.initializer)
+        : undefined;
+      if (!objectLiteral) {
+        warnings.push("Ignored FakerOverrides: expected an object literal.");
+        continue;
+      }
+
+      for (const property of objectLiteral.properties) {
+        if (!ts.isPropertyAssignment(property)) {
+          continue;
+        }
+
+        const key = getObjectPropertyName(property.name);
+        if (!key) {
+          warnings.push("Ignored FakerOverrides property: only identifier and string-literal keys are supported.");
+          continue;
+        }
+
+        const initializer = property.initializer;
+        const isFunctionOverride = ts.isArrowFunction(initializer) || ts.isFunctionExpression(initializer);
+        const invokeMode = isFunctionOverride
+          ? initializer.parameters.length > 0
+            ? "callWithFaker"
+            : "call"
+          : "raw";
+        overrides[key] = {
+          expression: initializer.getText(sourceFile),
+          invokeMode,
+        };
+      }
+    }
+  }
+
+  return overrides;
+}
+
+function unwrapObjectLiteralExpression(expression: ts.Expression): ts.ObjectLiteralExpression | undefined {
+  if (ts.isObjectLiteralExpression(expression)) {
+    return expression;
+  }
+
+  if (ts.isAsExpression(expression) || ts.isTypeAssertionExpression(expression) || ts.isParenthesizedExpression(expression)) {
+    return unwrapObjectLiteralExpression(expression.expression);
+  }
+
+  return undefined;
+}
+
+function getObjectPropertyName(name: ts.PropertyName): string | null {
+  if (ts.isIdentifier(name) || ts.isStringLiteral(name) || ts.isNoSubstitutionTemplateLiteral(name)) {
+    return name.text;
+  }
+
+  return null;
+}
+
+function toFakerOverrideSpec(input: FakerOverrideInput): FakerOverrideSpec {
+  if (typeof input === "function") {
+    return {
+      expression: input.toString(),
+      invokeMode: input.length > 0 ? "callWithFaker" : "call",
+    };
+  }
+
+  return {
+    expression: input,
+    invokeMode: "raw",
+  };
 }
 
 function mergeFilters(...groups: string[][]): string[] {
@@ -289,6 +404,31 @@ function isGenericDeclaration(symbol: ts.Symbol): boolean {
   });
 }
 
+function isGeneratableRootType(type: ts.Type, checker: ts.TypeChecker): boolean {
+  if ((type.flags & ts.TypeFlags.Union) !== 0) {
+    const union = type as ts.UnionType;
+    const concrete = union.types.filter(
+      (member) => (member.flags & ts.TypeFlags.Null) === 0 && (member.flags & ts.TypeFlags.Undefined) === 0,
+    );
+    return concrete.length > 0 && concrete.every((member) => isGeneratableRootType(member, checker));
+  }
+
+  if ((type.flags & ts.TypeFlags.Intersection) !== 0) {
+    const intersection = type as ts.IntersectionType;
+    return intersection.types.every((member) => isGeneratableRootType(member, checker));
+  }
+
+  if ((type.flags & ts.TypeFlags.Object) === 0) {
+    return false;
+  }
+
+  if (checker.isArrayType(type) || checker.isTupleType(type)) {
+    return false;
+  }
+
+  return true;
+}
+
 function dedupeTargets(targets: TargetSpec[]): TargetSpec[] {
   const byTypeText = new Map<string, TargetSpec>();
 
@@ -301,7 +441,13 @@ function dedupeTargets(targets: TargetSpec[]): TargetSpec[] {
   return [...byTypeText.values()];
 }
 
-function emitFunctions(targets: TargetSpec[], checker: ts.TypeChecker, sourceFile: ts.SourceFile, deepMerge: boolean): string {
+function emitFunctions(
+  targets: TargetSpec[],
+  checker: ts.TypeChecker,
+  sourceFile: ts.SourceFile,
+  deepMerge: boolean,
+  fakerOverrides: Map<string, FakerOverrideSpec>,
+): string {
   const typeToFunctionName = new Map<string, string>();
 
   for (const target of targets) {
@@ -315,6 +461,7 @@ function emitFunctions(targets: TargetSpec[], checker: ts.TypeChecker, sourceFil
     typeToFunctionName,
     activeTypes: new Set<string>(),
     maxDepth: 8,
+    fakerOverrides,
   };
 
   const sections: string[] = [emitSharedHelperRuntime(deepMerge)];
@@ -324,7 +471,7 @@ function emitFunctions(targets: TargetSpec[], checker: ts.TypeChecker, sourceFil
 
 function emitFunction(target: TargetSpec, context: GenerationContext): string {
   const callbackTypeName = `${toPascalCase(target.functionName)}CallbackParam`;
-  const body = emitObjectLiteral(target.type, context, 1, target.typeText);
+  const body = emitObjectLiteral(target.type, context, 1, target.typeText, target.typeText, []);
   const baseBlock = formatAssignmentBlock(`  const base: ${target.typeText} =`, body);
 
   return [
@@ -343,6 +490,8 @@ function emitObjectLiteral(
   context: GenerationContext,
   depth: number,
   fallbackTypeText: string,
+  rootTypeText: string,
+  propertyPath: string[],
 ): string {
   const checker = context.checker;
   const properties = checker.getPropertiesOfType(type);
@@ -352,7 +501,17 @@ function emitObjectLiteral(
   for (const property of properties) {
     const declaration = property.valueDeclaration ?? property.declarations?.[0] ?? context.sourceFile;
     const propertyType = checker.getTypeOfSymbolAtLocation(property, declaration);
-    const expression = emitExpression(propertyType, context, depth + 1, fallbackTypeText);
+    const nextPath = [...propertyPath, property.name];
+    const declaredTypeText = getDeclaredTypeText(declaration, context.sourceFile);
+    const expression = emitExpression(
+      propertyType,
+      context,
+      depth + 1,
+      fallbackTypeText,
+      rootTypeText,
+      nextPath,
+      declaredTypeText,
+    );
     const propertyName = needsQuotedProperty(property.name) ? JSON.stringify(property.name) : property.name;
     lines.push(`  ${propertyName}: ${expression},`);
   }
@@ -449,8 +608,34 @@ function emitSharedHelperRuntime(deepMerge: boolean): string {
   ].join("\n");
 }
 
-function emitExpression(type: ts.Type, context: GenerationContext, depth: number, fallbackTypeText: string): string {
+function emitExpression(
+  type: ts.Type,
+  context: GenerationContext,
+  depth: number,
+  fallbackTypeText: string,
+  rootTypeText: string,
+  propertyPath: string[],
+  declaredTypeText?: string,
+): string {
   const checker = context.checker;
+  const normalizedTypeText = checker.typeToString(type, context.sourceFile, ts.TypeFormatFlags.NoTruncation);
+
+  const override = resolveFakerOverride(context, {
+    rootTypeText,
+    propertyPath,
+    typeText: normalizedTypeText,
+    aliasTypeText: type.aliasSymbol?.getName(),
+    declaredTypeText,
+  });
+  if (override) {
+    if (override.invokeMode === "callWithFaker") {
+      return `(${override.expression})(faker)`;
+    }
+    if (override.invokeMode === "call") {
+      return `(${override.expression})()`;
+    }
+    return override.expression;
+  }
 
   if (type.isStringLiteral()) {
     return JSON.stringify(type.value);
@@ -501,7 +686,15 @@ function emitExpression(type: ts.Type, context: GenerationContext, depth: number
       if (!presentType) {
         return "null";
       }
-      const whenPresent = emitExpression(presentType, context, depth + 1, fallbackTypeText);
+      const whenPresent = emitExpression(
+        presentType,
+        context,
+        depth + 1,
+        fallbackTypeText,
+        rootTypeText,
+        propertyPath,
+        declaredTypeText,
+      );
       return `faker.datatype.boolean() ? ${whenPresent} : null`;
     }
 
@@ -510,7 +703,15 @@ function emitExpression(type: ts.Type, context: GenerationContext, depth: number
       if (!presentType) {
         return "undefined";
       }
-      const whenPresent = emitExpression(presentType, context, depth + 1, fallbackTypeText);
+      const whenPresent = emitExpression(
+        presentType,
+        context,
+        depth + 1,
+        fallbackTypeText,
+        rootTypeText,
+        propertyPath,
+        declaredTypeText,
+      );
       return `faker.datatype.boolean() ? ${whenPresent} : undefined`;
     }
 
@@ -537,7 +738,9 @@ function emitExpression(type: ts.Type, context: GenerationContext, depth: number
       }
 
       if (concreteMembers.every((member) => (member.flags & ts.TypeFlags.Object) !== 0)) {
-        const branches = concreteMembers.map((member) => emitExpression(member, context, depth + 1, fallbackTypeText));
+        const branches = concreteMembers.map((member) =>
+          emitExpression(member, context, depth + 1, fallbackTypeText, rootTypeText, propertyPath, declaredTypeText),
+        );
         return `faker.helpers.arrayElement([${branches.join(", ")}])`;
       }
 
@@ -545,13 +748,12 @@ function emitExpression(type: ts.Type, context: GenerationContext, depth: number
       if (!firstMember) {
         return "undefined";
       }
-      return emitExpression(firstMember, context, depth + 1, fallbackTypeText);
+      return emitExpression(firstMember, context, depth + 1, fallbackTypeText, rootTypeText, propertyPath, declaredTypeText);
     }
 
     return "undefined";
   }
 
-  const normalizedTypeText = checker.typeToString(type, context.sourceFile, ts.TypeFormatFlags.NoTruncation);
   if (normalizedTypeText === "string") {
     return "faker.word.noun()";
   }
@@ -569,7 +771,15 @@ function emitExpression(type: ts.Type, context: GenerationContext, depth: number
     const ref = type as ts.TypeReference;
     const [itemType] = checker.getTypeArguments(ref);
     const itemExpression = itemType
-      ? emitExpression(itemType, context, depth + 1, checker.typeToString(itemType, context.sourceFile, ts.TypeFormatFlags.NoTruncation))
+      ? emitExpression(
+          itemType,
+          context,
+          depth + 1,
+          checker.typeToString(itemType, context.sourceFile, ts.TypeFormatFlags.NoTruncation),
+          rootTypeText,
+          propertyPath,
+          declaredTypeText,
+        )
       : "faker.word.noun()";
 
     return `Array.from({ length: faker.number.int({ min: 1, max: 3 }) }, () => ${itemExpression})`;
@@ -603,7 +813,7 @@ function emitExpression(type: ts.Type, context: GenerationContext, depth: number
     }
 
     context.activeTypes.add(typeText);
-    const nested = emitInlineObject(type, context, depth + 1, typeText);
+    const nested = emitInlineObject(type, context, depth + 1, typeText, rootTypeText, propertyPath);
     context.activeTypes.delete(typeText);
     return nested;
   }
@@ -623,117 +833,14 @@ function areAllBooleanLiterals(types: ts.Type[]): boolean {
   return types.length > 0 && types.every((type) => (type.flags & ts.TypeFlags.BooleanLiteral) !== 0);
 }
 
-function emitCallbackType(target: TargetSpec, callbackTypeName: string, nestedHelpers: NestedHelperSpec[]): string {
-  if (nestedHelpers.length === 0) {
-    return `export type ${callbackTypeName} = () => Partial<${target.typeText}>;`;
-  }
-
-  const fields = nestedHelpers.map((helper) => {
-    return `${helper.helperName}: (overrides?: Partial<${helper.typeExpression}>) => ${helper.typeExpression};`;
-  });
-
-  return `export type ${callbackTypeName} = (helpers: { ${fields.join(" ")} }) => Partial<${target.typeText}>;`;
-}
-
-function emitResolvedOverrides(target: TargetSpec, nestedHelpers: NestedHelperSpec[], callbackTypeName: string): string {
-  if (nestedHelpers.length === 0) {
-    return [
-      `  const resolvedOverrides: Partial<${target.typeText}> | undefined =`,
-      `    typeof overrides === "function" ? (overrides as ${callbackTypeName})() : overrides;`,
-    ].join("\n");
-  }
-
-  const helperEntries = nestedHelpers.map((helper) => {
-    return `${helper.helperName}: (nestedOverrides?: Partial<${helper.typeExpression}>) => ({ ...${helper.baseExpression}, ...nestedOverrides }) as ${helper.typeExpression},`;
-  });
-
-  return [
-    `  const resolvedOverrides: Partial<${target.typeText}> | undefined =`,
-    `    typeof overrides === "function"`,
-    `      ? (overrides as ${callbackTypeName})({`,
-    ...helperEntries.map((entry) => `          ${entry}`),
-    `        })`,
-    `      : overrides;`,
-  ].join("\n");
-}
-
-function collectNestedHelpers(target: TargetSpec, context: GenerationContext): NestedHelperSpec[] {
-  const checker = context.checker;
-  const properties = checker.getPropertiesOfType(target.type);
-  const helpers: NestedHelperSpec[] = [];
-
-  for (const property of properties) {
-    const declaration = property.valueDeclaration ?? property.declarations?.[0] ?? context.sourceFile;
-    const propertyType = checker.getTypeOfSymbolAtLocation(property, declaration);
-    const objectType = extractObjectType(propertyType);
-    if (!objectType) {
-      continue;
-    }
-
-    const propertyName = property.name;
-    const helperName = `generate${toPascalCase(propertyName)}`;
-    const typeExpression = `${target.typeText}[${JSON.stringify(propertyName)}]`;
-    const baseExpression = emitExpression(objectType, context, 2, typeExpression);
-
-    helpers.push({
-      helperName,
-      propertyName,
-      typeExpression,
-      baseExpression,
-    });
-  }
-
-  return dedupeNestedHelpers(helpers);
-}
-
-function dedupeNestedHelpers(helpers: NestedHelperSpec[]): NestedHelperSpec[] {
-  const seen = new Set<string>();
-  const deduped: NestedHelperSpec[] = [];
-
-  for (const helper of helpers) {
-    if (seen.has(helper.helperName)) {
-      continue;
-    }
-    seen.add(helper.helperName);
-    deduped.push(helper);
-  }
-
-  return deduped;
-}
-
-function extractObjectType(type: ts.Type): ts.Type | null {
-  if ((type.flags & ts.TypeFlags.Union) !== 0) {
-    const union = type as ts.UnionType;
-    const concreteMembers = union.types.filter(
-      (member) => (member.flags & ts.TypeFlags.Null) === 0 && (member.flags & ts.TypeFlags.Undefined) === 0,
-    );
-    if (concreteMembers.length !== 1) {
-      return null;
-    }
-    const concreteMember = concreteMembers[0];
-    if (!concreteMember) {
-      return null;
-    }
-    return extractObjectType(concreteMember);
-  }
-
-  if ((type.flags & ts.TypeFlags.Object) === 0) {
-    return null;
-  }
-
-  const checkerType = type as ts.ObjectType;
-  if ((checkerType.objectFlags & ts.ObjectFlags.Reference) !== 0) {
-    return type;
-  }
-
-  if ((checkerType.objectFlags & ts.ObjectFlags.Tuple) !== 0) {
-    return null;
-  }
-
-  return type;
-}
-
-function emitInlineObject(type: ts.Type, context: GenerationContext, depth: number, typeText: string): string {
+function emitInlineObject(
+  type: ts.Type,
+  context: GenerationContext,
+  depth: number,
+  typeText: string,
+  rootTypeText: string,
+  propertyPath: string[],
+): string {
   const checker = context.checker;
   const properties = checker.getPropertiesOfType(type);
   if (properties.length === 0) {
@@ -745,13 +852,64 @@ function emitInlineObject(type: ts.Type, context: GenerationContext, depth: numb
   for (const property of properties) {
     const declaration = property.valueDeclaration ?? property.declarations?.[0] ?? context.sourceFile;
     const propertyType = checker.getTypeOfSymbolAtLocation(property, declaration);
-    const expression = emitExpression(propertyType, context, depth + 1, checker.typeToString(propertyType));
+    const expression = emitExpression(
+      propertyType,
+      context,
+      depth + 1,
+      checker.typeToString(propertyType),
+      rootTypeText,
+      [...propertyPath, property.name],
+      getDeclaredTypeText(declaration, context.sourceFile),
+    );
     const propertyName = needsQuotedProperty(property.name) ? JSON.stringify(property.name) : property.name;
     lines.push(`  ${propertyName}: ${expression},`);
   }
 
   lines.push("}");
   return lines.join("\n");
+}
+
+function resolveFakerOverride(
+  context: GenerationContext,
+  value: {
+    rootTypeText: string;
+    propertyPath: string[];
+    typeText: string;
+    aliasTypeText?: string;
+    declaredTypeText?: string;
+  },
+): FakerOverrideSpec | undefined {
+  const path = value.propertyPath.join(".");
+  const keys = [
+    normalizeFilterKey(`${value.rootTypeText}.${path}`),
+    normalizeFilterKey(path),
+    normalizeFilterKey(value.propertyPath[value.propertyPath.length - 1] ?? ""),
+    normalizeFilterKey(value.declaredTypeText ?? ""),
+    normalizeFilterKey(value.aliasTypeText ?? ""),
+    normalizeFilterKey(value.typeText),
+  ].filter((key) => key.length > 0);
+
+  for (const key of keys) {
+    const override = context.fakerOverrides.get(key);
+    if (override) {
+      return override;
+    }
+  }
+
+  return undefined;
+}
+
+function getDeclaredTypeText(declaration: ts.Node, sourceFile: ts.SourceFile): string | undefined {
+  if (
+    ts.isPropertySignature(declaration) ||
+    ts.isPropertyDeclaration(declaration) ||
+    ts.isParameter(declaration) ||
+    ts.isTypeAliasDeclaration(declaration)
+  ) {
+    return declaration.type?.getText(sourceFile);
+  }
+
+  return undefined;
 }
 
 function ensureFakerImport(source: string): string {

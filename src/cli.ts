@@ -12,6 +12,7 @@ interface CliOptions {
   deepMerge: boolean;
   include: string[];
   exclude: string[];
+  fakerOverrides: Record<string, string>;
 }
 
 async function main(): Promise<void> {
@@ -39,6 +40,7 @@ async function main(): Promise<void> {
     deepMerge: options.deepMerge,
     include: options.include,
     exclude: options.exclude,
+    fakerOverrides: options.fakerOverrides,
   });
 
   for (const warning of result.warnings) {
@@ -73,6 +75,7 @@ function parseArgs(args: string[]): CliOptions {
     deepMerge: false,
     include: [],
     exclude: [],
+    fakerOverrides: {},
   };
 
   for (let i = 0; i < args.length; i += 1) {
@@ -122,6 +125,13 @@ function parseArgs(args: string[]): CliOptions {
       continue;
     }
 
+    if (arg === "--faker-override") {
+      const {key, expression} = parseOverrideArg(args[i + 1]);
+      options.fakerOverrides[key] = expression;
+      i += 1;
+      continue;
+    }
+
     throw new Error(`Unknown argument: ${arg}`);
   }
 
@@ -143,6 +153,7 @@ Options:
       --deep-merge    Deep merge overrides instead of shallow spread
       --include       Comma-separated generator/type filters to include
       --exclude       Comma-separated generator/type filters to exclude
+      --faker-override  key=expression override for faker output
   -h, --help          Show this help message
 `);
 }
@@ -197,6 +208,7 @@ async function runWatchMode(options: CliOptions): Promise<void> {
         deepMerge: options.deepMerge,
         include: options.include,
         exclude: options.exclude,
+        fakerOverrides: options.fakerOverrides,
       });
 
       for (const warning of result.warnings) {
@@ -251,6 +263,25 @@ function parseListArg(raw: string | undefined): string[] {
     .split(",")
     .map((item) => item.trim())
     .filter((item) => item.length > 0);
+}
+
+function parseOverrideArg(raw: string | undefined): { key: string; expression: string } {
+  if (!raw) {
+    throw new Error("Expected key=expression after --faker-override.");
+  }
+
+  const separatorIndex = raw.indexOf("=");
+  if (separatorIndex <= 0) {
+    throw new Error("Expected --faker-override in the format key=expression.");
+  }
+
+  const key = raw.slice(0, separatorIndex).trim();
+  const expression = raw.slice(separatorIndex + 1).trim();
+  if (!key || !expression) {
+    throw new Error("Expected non-empty key and expression for --faker-override.");
+  }
+
+  return {key, expression};
 }
 
 main().catch((error: unknown) => {

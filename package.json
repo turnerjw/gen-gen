@@ -1,0 +1,39 @@
+{
+  "name": "gen-gen",
+  "version": "0.1.0",
+  "description": "Generate Faker-based test data builders from imported TypeScript types.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "module": "./dist/index.js",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./vite": {
+      "types": "./dist/vite-plugin.d.ts",
+      "import": "./dist/vite-plugin.js"
+    }
+  },
+  "bin": {
+    "gen-gen": "./dist/cli.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "gen:example": "node ./dist/cli.js --input example/data-gen.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^24.6.0"
+  },
+  "peerDependencies": {
+    "typescript": "^5.9.3"
+  },
+  "dependencies": {
+    "@faker-js/faker": "^10.3.0"
+  }
+}

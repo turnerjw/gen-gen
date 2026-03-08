@@ -24,12 +24,40 @@ interface ViteLikeServer {
   };
 }
 
-export function genGenPlugin(options: GenGenPluginOptions = {}) {
+interface PluginDeps {
+  generate(options: {
+    input?: string;
+    cwd?: string;
+    markerText?: string;
+    write?: boolean;
+    failOnWarn?: boolean;
+    deepMerge?: boolean;
+    include?: string[];
+    exclude?: string[];
+    fakerOverrides?: Record<string, FakerOverrideInput>;
+  }): Promise<GenerateResult>;
+  warn(message: string): void;
+  error(message: string, error: unknown): void;
+}
+
+const defaultPluginDeps: PluginDeps = {
+  generate(options) {
+    return generateDataFile(options);
+  },
+  warn(message) {
+    console.warn(message);
+  },
+  error(message, error) {
+    console.error(message, error);
+  },
+};
+
+export function createGenGenPlugin(options: GenGenPluginOptions = {}, deps: PluginDeps = defaultPluginDeps) {
   let root = process.cwd();
   const watchedFiles = new Set<string>();
 
   async function runGeneration(write: boolean): Promise<GenerateResult> {
-    const result = await generateDataFile({
+    const result = await deps.generate({
       input: options.input,
       cwd: root,
       markerText: options.markerText,
@@ -47,7 +75,7 @@ export function genGenPlugin(options: GenGenPluginOptions = {}) {
     }
 
     for (const warning of result.warnings) {
-      console.warn(`[gen-gen] ${warning}`);
+      deps.warn(`[gen-gen] ${warning}`);
     }
 
     return result;
@@ -79,9 +107,13 @@ export function genGenPlugin(options: GenGenPluginOptions = {}) {
             server.ws.send({type: "full-reload"});
           }
         } catch (error) {
-          console.error("[gen-gen] generation failed during watch", error);
+          deps.error("[gen-gen] generation failed during watch", error);
         }
       });
     },
   };
+}
+
+export function genGenPlugin(options: GenGenPluginOptions = {}) {
+  return createGenGenPlugin(options);
 }

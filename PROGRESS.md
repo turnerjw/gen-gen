@@ -48,7 +48,7 @@ Last updated: 2026-03-07
 ### Testing Gaps
 
 - [x] Dedicated CLI watch-mode tests (debounce, repeated file changes, watcher refresh)
-- [ ] Vite plugin tests (`buildStart`, `addWatchFile`, dev server watcher integration)
+- [x] Vite plugin tests (`buildStart`, `addWatchFile`, dev server watcher integration)
 
 ### Nice to Have
 
@@ -61,8 +61,8 @@ Last updated: 2026-03-07
 
 ## Suggested Next Implementation Order
 
-1. Vite plugin tests
-2. `@gen-gen-ignore` controls
-3. Policy options for optional/readonly/index signatures
-4. Branded/opaque type ergonomics
-5. Enum-specific strategy polish
+1. `@gen-gen-ignore` controls
+2. Policy options for optional/readonly/index signatures
+3. Branded/opaque type ergonomics
+4. Enum-specific strategy polish
+5. Output formatting pass

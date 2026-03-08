@@ -24,6 +24,11 @@ describe("vite plugin", () => {
       {
         input: "example/data-gen.ts",
         failOnWarn: true,
+        propertyPolicy: {
+          optionalProperties: "omit",
+          readonlyProperties: "warn",
+          indexSignatures: "warn",
+        },
         include: ["User"],
       },
       {
@@ -51,6 +56,11 @@ describe("vite plugin", () => {
     expect(generatedOptions[0]?.cwd).toBe("/workspace/project");
     expect(generatedOptions[0]?.write).toBeTrue();
     expect(generatedOptions[0]?.failOnWarn).toBeTrue();
+    expect(generatedOptions[0]?.propertyPolicy).toEqual({
+      optionalProperties: "omit",
+      readonlyProperties: "warn",
+      indexSignatures: "warn",
+    });
     expect(generatedOptions[0]?.include).toEqual(["User"]);
   });
 

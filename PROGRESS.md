@@ -38,7 +38,7 @@ Last updated: 2026-03-07
 
 - [x] `@gen-gen-ignore` per-type/per-property controls
   - Skip specific generators or fields inline in source file
-- [ ] Explicit optional/readonly/index-signature policy options
+- [x] Explicit optional/readonly/index-signature policy options
   - Define configurable behavior contract instead of implicit behavior
 - [ ] Branded/opaque type support ergonomics
   - Dedicated alias/type mapping strategy beyond generic faker overrides
@@ -61,8 +61,8 @@ Last updated: 2026-03-07
 
 ## Suggested Next Implementation Order
 
-1. Policy options for optional/readonly/index signatures
-2. Branded/opaque type ergonomics
-3. Enum-specific strategy polish
-4. Output formatting pass
-5. Fully pluggable faker strategy hooks API
+1. Branded/opaque type ergonomics
+2. Enum-specific strategy polish
+3. Output formatting pass
+4. Fully pluggable faker strategy hooks API
+5. Additional CLI/API UX polish

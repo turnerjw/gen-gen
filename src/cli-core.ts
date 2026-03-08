@@ -1,6 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
-import {generateDataFile, type GenerateResult} from "./generator.js";
+import {generateDataFile, type GenerateResult, type PropertyPolicy} from "./generator.js";
 
 export interface CliOptions {
   input?: string;
@@ -8,6 +8,9 @@ export interface CliOptions {
   check: boolean;
   dryRun: boolean;
   failOnWarn: boolean;
+  optionalProperties: PropertyPolicy["optionalProperties"];
+  readonlyProperties: PropertyPolicy["readonlyProperties"];
+  indexSignatures: PropertyPolicy["indexSignatures"];
   watch: boolean;
   deepMerge: boolean;
   include: string[];
@@ -26,6 +29,7 @@ interface WatchDeps {
     cwd?: string;
     write: boolean;
     failOnWarn: boolean;
+    propertyPolicy: Partial<PropertyPolicy>;
     deepMerge: boolean;
     include: string[];
     exclude: string[];
@@ -67,6 +71,9 @@ export function parseArgs(args: string[]): CliOptions {
     check: false,
     dryRun: false,
     failOnWarn: false,
+    optionalProperties: "include",
+    readonlyProperties: "include",
+    indexSignatures: "ignore",
     watch: false,
     deepMerge: false,
     include: [],
@@ -101,6 +108,36 @@ export function parseArgs(args: string[]): CliOptions {
 
     if (arg === "--fail-on-warn") {
       options.failOnWarn = true;
+      continue;
+    }
+
+    if (arg === "--optional-properties") {
+      const value = args[i + 1];
+      if (value !== "include" && value !== "omit") {
+        throw new Error("Expected --optional-properties to be one of: include, omit.");
+      }
+      options.optionalProperties = value;
+      i += 1;
+      continue;
+    }
+
+    if (arg === "--readonly-properties") {
+      const value = args[i + 1];
+      if (value !== "include" && value !== "warn") {
+        throw new Error("Expected --readonly-properties to be one of: include, warn.");
+      }
+      options.readonlyProperties = value;
+      i += 1;
+      continue;
+    }
+
+    if (arg === "--index-signatures") {
+      const value = args[i + 1];
+      if (value !== "ignore" && value !== "warn") {
+        throw new Error("Expected --index-signatures to be one of: ignore, warn.");
+      }
+      options.indexSignatures = value;
+      i += 1;
       continue;
     }
 
@@ -151,6 +188,12 @@ Options:
       --check         Exit 1 if generated section is out of date
       --dry-run       Print resulting file content to stdout
       --fail-on-warn  Exit with error if generation emits warnings
+      --optional-properties <include|omit>
+                     Include or omit optional properties in generated base objects
+      --readonly-properties <include|warn>
+                     Include readonly properties and optionally emit warnings
+      --index-signatures <ignore|warn>
+                     Ignore or warn when index signatures are not materialized
   -w, --watch         Regenerate on file changes
       --deep-merge    Deep merge overrides instead of shallow spread
       --include       Comma-separated generator/type filters to include
@@ -230,6 +273,11 @@ export function createWatchModeRuntime(
         cwd: options.cwd,
         write: true,
         failOnWarn: options.failOnWarn,
+        propertyPolicy: {
+          optionalProperties: options.optionalProperties,
+          readonlyProperties: options.readonlyProperties,
+          indexSignatures: options.indexSignatures,
+        },
         deepMerge: options.deepMerge,
         include: options.include,
         exclude: options.exclude,
@@ -301,6 +349,11 @@ export async function main(args = process.argv.slice(2)): Promise<void> {
     cwd: options.cwd,
     write: !options.dryRun && !options.check,
     failOnWarn: options.failOnWarn,
+    propertyPolicy: {
+      optionalProperties: options.optionalProperties,
+      readonlyProperties: options.readonlyProperties,
+      indexSignatures: options.indexSignatures,
+    },
     deepMerge: options.deepMerge,
     include: options.include,
     exclude: options.exclude,

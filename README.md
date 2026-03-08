@@ -58,6 +58,9 @@ Options:
 - `--check`: exits with code `1` if the generated section is stale
 - `--dry-run`: print resulting file contents instead of writing
 - `--fail-on-warn`: fail generation when warnings are emitted
+- `--optional-properties <include|omit>`: include or omit optional properties in generated base objects
+- `--readonly-properties <include|warn>`: include readonly properties and optionally emit warnings
+- `--index-signatures <ignore|warn>`: ignore or warn when index signatures are not materialized
 - `-w, --watch`: run continuously and regenerate on changes
 - `--deep-merge`: merge overrides deeply instead of shallow spread
 - `--include`: comma-separated filters to include specific generators/types
@@ -125,6 +128,44 @@ When to keep default shallow merge:
 - You want explicit replacement semantics at each top-level field.
 - You rely on full object replacement to avoid accidentally keeping stale nested defaults.
 - Your team already uses callback helpers for nested customization (`generateX(({generateY}) => ...)`).
+
+### Property Policy
+
+Policy options let you control generation behavior for optional properties, readonly properties, and index signatures.
+
+Defaults:
+
+- `optionalProperties: "include"`
+- `readonlyProperties: "include"`
+- `indexSignatures: "ignore"`
+
+CLI example:
+
+```bash
+gen-gen --input data-gen.ts \
+  --optional-properties omit \
+  --readonly-properties warn \
+  --index-signatures warn
+```
+
+Plugin example:
+
+```ts
+genGenPlugin({
+  input: "data-gen.ts",
+  propertyPolicy: {
+    optionalProperties: "omit",
+    readonlyProperties: "warn",
+    indexSignatures: "warn",
+  },
+});
+```
+
+Behavior notes:
+
+- `optionalProperties: "omit"` skips optional fields in generated base objects.
+- `readonlyProperties: "warn"` still includes readonly fields, but emits warnings.
+- `indexSignatures: "warn"` emits warnings when index signatures are present but not materialized into generated keys.
 
 ## Vite plugin
 

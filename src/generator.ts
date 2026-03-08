@@ -8,6 +8,7 @@ export interface GenerateOptions {
   markerText?: string;
   write?: boolean;
   failOnWarn?: boolean;
+  propertyPolicy?: Partial<PropertyPolicy>;
   deepMerge?: boolean;
   include?: string[];
   exclude?: string[];
@@ -22,6 +23,12 @@ export interface GenerateResult {
   content: string;
   watchedFiles: string[];
   warnings: string[];
+}
+
+export interface PropertyPolicy {
+  optionalProperties: "include" | "omit";
+  readonlyProperties: "include" | "warn";
+  indexSignatures: "ignore" | "warn";
 }
 
 interface TargetSpec {
@@ -44,10 +51,17 @@ interface GenerationContext {
   maxDepth: number;
   fakerOverrides: Map<string, FakerOverrideSpec>;
   usedFakerOverrideKeys: Set<string>;
+  policy: PropertyPolicy;
+  emittedWarnings: Set<string>;
 }
 
 const DEFAULT_INPUT = "data-gen.ts";
 const DEFAULT_MARKER_TEXT = "Generated below - DO NOT EDIT";
+const DEFAULT_PROPERTY_POLICY: PropertyPolicy = {
+  optionalProperties: "include",
+  readonlyProperties: "include",
+  indexSignatures: "ignore",
+};
 
 export async function generateDataFile(options: GenerateOptions = {}): Promise<GenerateResult> {
   const cwd = options.cwd ?? process.cwd();
@@ -67,9 +81,11 @@ export async function generateDataFile(options: GenerateOptions = {}): Promise<G
     parsed.sourceFile,
     options.deepMerge ?? false,
     parsed.fakerOverrides,
+    resolvePropertyPolicy(options.propertyPolicy),
   );
   const warnings = [
     ...parsed.warnings,
+    ...emitted.warnings,
     ...collectUnusedFakerOverrideWarnings(parsed.fakerOverrides, emitted.usedFakerOverrideKeys),
   ];
   if (options.failOnWarn && warnings.length > 0) {
@@ -95,6 +111,14 @@ export async function generateDataFile(options: GenerateOptions = {}): Promise<G
 
 function buildFailOnWarnMessage(warnings: string[]): string {
   return `Generation failed due to warnings:\n${warnings.map((warning) => `- ${warning}`).join("\n")}`;
+}
+
+function resolvePropertyPolicy(policy: Partial<PropertyPolicy> | undefined): PropertyPolicy {
+  return {
+    optionalProperties: policy?.optionalProperties ?? DEFAULT_PROPERTY_POLICY.optionalProperties,
+    readonlyProperties: policy?.readonlyProperties ?? DEFAULT_PROPERTY_POLICY.readonlyProperties,
+    indexSignatures: policy?.indexSignatures ?? DEFAULT_PROPERTY_POLICY.indexSignatures,
+  };
 }
 
 function parseTargets(
@@ -511,9 +535,11 @@ function emitFunctions(
   sourceFile: ts.SourceFile,
   deepMerge: boolean,
   fakerOverrides: Map<string, FakerOverrideSpec>,
+  policy: PropertyPolicy,
 ): {
   content: string;
   usedFakerOverrideKeys: Set<string>;
+  warnings: string[];
 } {
   const typeToFunctionName = new Map<string, string>();
 
@@ -530,6 +556,8 @@ function emitFunctions(
     maxDepth: 8,
     fakerOverrides,
     usedFakerOverrideKeys: new Set<string>(),
+    policy,
+    emittedWarnings: new Set<string>(),
   };
 
   const sections: string[] = [emitSharedHelperRuntime(deepMerge)];
@@ -537,6 +565,7 @@ function emitFunctions(
   return {
     content: sections.join("\n\n"),
     usedFakerOverrideKeys: context.usedFakerOverrideKeys,
+    warnings: [...context.emittedWarnings],
   };
 }
 
@@ -565,11 +594,21 @@ function emitObjectLiteral(
   propertyPath: string[],
 ): string {
   const checker = context.checker;
+  maybeWarnOnIndexSignature(type, context, rootTypeText, propertyPath);
   const properties = checker.getPropertiesOfType(type);
 
   const lines: string[] = ["{"];
 
   for (const property of properties) {
+    if (context.policy.optionalProperties === "omit" && isOptionalProperty(property)) {
+      continue;
+    }
+
+    if (context.policy.readonlyProperties === "warn" && isReadonlyProperty(property)) {
+      const location = formatWarningLocation(rootTypeText, propertyPath, property.name);
+      context.emittedWarnings.add(`Readonly property included by policy at ${location}.`);
+    }
+
     const declaration = property.valueDeclaration ?? property.declarations?.[0] ?? context.sourceFile;
     if (hasGenGenIgnoreTag(declaration, context.sourceFile)) {
       const propertyName = needsQuotedProperty(property.name) ? JSON.stringify(property.name) : property.name;
@@ -920,6 +959,7 @@ function emitInlineObject(
   propertyPath: string[],
 ): string {
   const checker = context.checker;
+  maybeWarnOnIndexSignature(type, context, rootTypeText, propertyPath);
   const properties = checker.getPropertiesOfType(type);
   if (properties.length === 0) {
     return `{} as ${typeText}`;
@@ -928,6 +968,15 @@ function emitInlineObject(
   const lines: string[] = ["{"];
 
   for (const property of properties) {
+    if (context.policy.optionalProperties === "omit" && isOptionalProperty(property)) {
+      continue;
+    }
+
+    if (context.policy.readonlyProperties === "warn" && isReadonlyProperty(property)) {
+      const location = formatWarningLocation(rootTypeText, propertyPath, property.name);
+      context.emittedWarnings.add(`Readonly property included by policy at ${location}.`);
+    }
+
     const declaration = property.valueDeclaration ?? property.declarations?.[0] ?? context.sourceFile;
     if (hasGenGenIgnoreTag(declaration, context.sourceFile)) {
       const propertyName = needsQuotedProperty(property.name) ? JSON.stringify(property.name) : property.name;
@@ -1078,6 +1127,57 @@ function hasGenGenIgnoreTag(node: ts.Node, sourceFile?: ts.SourceFile): boolean 
   const fullText = file.getFullText();
   const leading = ts.getLeadingCommentRanges(fullText, node.getFullStart()) ?? [];
   return leading.some((range) => fullText.slice(range.pos, range.end).includes("@gen-gen-ignore"));
+}
+
+function isOptionalProperty(symbol: ts.Symbol): boolean {
+  return (symbol.flags & ts.SymbolFlags.Optional) !== 0;
+}
+
+function isReadonlyProperty(symbol: ts.Symbol): boolean {
+  return (symbol.declarations ?? []).some((declaration) => {
+    if (
+      ts.isPropertySignature(declaration) ||
+      ts.isPropertyDeclaration(declaration) ||
+      ts.isParameter(declaration)
+    ) {
+      return (declaration.modifiers ?? []).some((modifier) => modifier.kind === ts.SyntaxKind.ReadonlyKeyword);
+    }
+    return false;
+  });
+}
+
+function maybeWarnOnIndexSignature(
+  type: ts.Type,
+  context: GenerationContext,
+  rootTypeText: string,
+  propertyPath: string[],
+): void {
+  if (context.policy.indexSignatures !== "warn") {
+    return;
+  }
+
+  const checker = context.checker;
+  const hasStringIndex = checker.getIndexTypeOfType(type, ts.IndexKind.String) !== undefined;
+  const hasNumberIndex = checker.getIndexTypeOfType(type, ts.IndexKind.Number) !== undefined;
+  if (!hasStringIndex && !hasNumberIndex) {
+    return;
+  }
+
+  const kind = hasStringIndex && hasNumberIndex ? "string/number" : hasStringIndex ? "string" : "number";
+  const location = formatWarningLocation(rootTypeText, propertyPath);
+  context.emittedWarnings.add(`Index signature (${kind}) not materialized at ${location}.`);
+}
+
+function formatWarningLocation(rootTypeText: string, propertyPath: string[], leaf?: string): string {
+  const parts = [...propertyPath];
+  if (leaf) {
+    parts.push(leaf);
+  }
+
+  if (parts.length === 0) {
+    return rootTypeText;
+  }
+  return `${rootTypeText}.${parts.join(".")}`;
 }
 
 function ensureFakerImport(source: string): string {

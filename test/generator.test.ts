@@ -568,4 +568,66 @@ import type { User } from "./types";
     expect(result.content).toContain("id: faker.word.noun()");
     expect(result.content).not.toContain("locale: faker");
   });
+
+  test("omits optional properties when optionalProperties policy is omit", async () => {
+    const cwd = await createFixture({
+      "types.ts": `
+export type Account = {
+  id: string;
+  email?: string;
+};
+`,
+      "data-gen.ts": `
+import type { Account } from "./types";
+
+/**
+ * Generated below - DO NOT EDIT
+ */
+`,
+    });
+
+    const result = await generateDataFile({
+      cwd,
+      write: false,
+      propertyPolicy: {
+        optionalProperties: "omit",
+      },
+    });
+
+    expect(result.content).toContain("id: faker.word.noun()");
+    expect(result.content).not.toContain("email:");
+  });
+
+  test("emits warnings for readonly properties and index signatures by policy", async () => {
+    const cwd = await createFixture({
+      "types.ts": `
+export type Config = {
+  readonly id: string;
+  values: {
+    [key: string]: number;
+  };
+};
+`,
+      "data-gen.ts": `
+import type { Config } from "./types";
+
+/**
+ * Generated below - DO NOT EDIT
+ */
+`,
+    });
+
+    const result = await generateDataFile({
+      cwd,
+      write: false,
+      propertyPolicy: {
+        readonlyProperties: "warn",
+        indexSignatures: "warn",
+      },
+    });
+
+    expect(result.warnings).toContain("Readonly property included by policy at Config.id.");
+    expect(result.warnings).toContain("Index signature (string) not materialized at Config.values.");
+    expect(result.content).toContain("id: faker.word.noun()");
+  });
 });

@@ -1,10 +1,11 @@
 import path from "node:path";
-import {generateDataFile, type FakerOverrideInput, type GenerateResult} from "./generator.js";
+import {generateDataFile, type FakerOverrideInput, type GenerateResult, type PropertyPolicy} from "./generator.js";
 
 export interface GenGenPluginOptions {
   input?: string;
   markerText?: string;
   failOnWarn?: boolean;
+  propertyPolicy?: Partial<PropertyPolicy>;
   deepMerge?: boolean;
   include?: string[];
   exclude?: string[];
@@ -31,6 +32,7 @@ interface PluginDeps {
     markerText?: string;
     write?: boolean;
     failOnWarn?: boolean;
+    propertyPolicy?: Partial<PropertyPolicy>;
     deepMerge?: boolean;
     include?: string[];
     exclude?: string[];
@@ -63,6 +65,7 @@ export function createGenGenPlugin(options: GenGenPluginOptions = {}, deps: Plug
       markerText: options.markerText,
       write,
       failOnWarn: options.failOnWarn,
+      propertyPolicy: options.propertyPolicy,
       deepMerge: options.deepMerge,
       include: options.include,
       exclude: options.exclude,

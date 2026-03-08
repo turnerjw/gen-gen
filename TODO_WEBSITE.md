@@ -26,6 +26,29 @@ Build a static marketing site for `gen-gen` using TanStack Router + shadcn/ui.
 - [ ] Add OG/social image asset.
 - [ ] Validate static build artifacts and local preview.
 
+## Type Playground (Interactive)
+
+### Goal
+Allow users to paste/write a TypeScript type and instantly see generated factory code.
+
+### MVP Scope
+- [ ] Add `/playground` route.
+- [ ] Add two editors:
+  - input: TypeScript type definitions
+  - output: generated code (read-only)
+- [ ] Add “Generate” button and optional auto-generate toggle.
+- [ ] Support simple in-file types (no external imports required).
+- [ ] Provide starter sample in input editor.
+- [ ] Add copy-to-clipboard for generated output.
+- [ ] Handle parse/generation errors with inline diagnostics.
+- [ ] Keep this feature static-site compatible (no required backend for MVP).
+
+### V2 Scope
+- [ ] Add support for multiple related type declarations in one input.
+- [ ] Add options panel matching core flags (deep merge, presets, etc.).
+- [ ] Add shareable URL state (encode input/options).
+- [ ] Add “open in repo” guidance for moving playground output into real projects.
+
 ## Deliverables
 - Working static landing page app.
 - Production build output.

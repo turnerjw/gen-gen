@@ -34,6 +34,14 @@ Ship complete, versioned docs for MVP features on the static website.
 - [ ] Add “Edit on GitHub” links.
 - [ ] Add docs QA checklist to verify snippets remain valid.
 
+## Playground Docs
+
+- [ ] Add “Playground” docs page linked from nav/docs sidebar.
+- [ ] Document supported input scope for MVP (single-file type declarations, no external imports).
+- [ ] Document known limitations and how to move generated code into project files.
+- [ ] Add 3 starter playground examples (basic object, union, generic concrete type).
+- [ ] Document error messages users may encounter in playground parsing/generation.
+
 ## Deliverables
 - Complete docs site section linked from landing page.
 - Verified snippets that match current CLI/API/plugin behavior.

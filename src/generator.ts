@@ -754,6 +754,12 @@ function emitExpression(
     return override.expression;
   }
 
+  const brandedPrimitiveKind = getBrandedPrimitiveKind(type);
+  if (brandedPrimitiveKind) {
+    const primitiveExpression = emitPrimitiveExpression(brandedPrimitiveKind);
+    return normalizedTypeText === brandedPrimitiveKind ? primitiveExpression : `${primitiveExpression} as ${normalizedTypeText}`;
+  }
+
   if (type.isStringLiteral()) {
     return JSON.stringify(type.value);
   }
@@ -767,19 +773,19 @@ function emitExpression(
   }
 
   if (type.flags & ts.TypeFlags.String) {
-    return "faker.word.noun()";
+    return emitPrimitiveExpression("string");
   }
 
   if (type.flags & ts.TypeFlags.Number) {
-    return "faker.number.int({ min: 1, max: 1000 })";
+    return emitPrimitiveExpression("number");
   }
 
   if (type.flags & ts.TypeFlags.Boolean) {
-    return "faker.datatype.boolean()";
+    return emitPrimitiveExpression("boolean");
   }
 
   if (type.flags & ts.TypeFlags.BigInt) {
-    return "BigInt(faker.number.int({ min: 1, max: 1000 }))";
+    return emitPrimitiveExpression("bigint");
   }
 
   if (type.flags & ts.TypeFlags.Null) {
@@ -872,16 +878,16 @@ function emitExpression(
   }
 
   if (normalizedTypeText === "string") {
-    return "faker.word.noun()";
+    return emitPrimitiveExpression("string");
   }
   if (normalizedTypeText === "number") {
-    return "faker.number.int({ min: 1, max: 1000 })";
+    return emitPrimitiveExpression("number");
   }
   if (normalizedTypeText === "boolean") {
-    return "faker.datatype.boolean()";
+    return emitPrimitiveExpression("boolean");
   }
   if (normalizedTypeText === "bigint") {
-    return "BigInt(faker.number.int({ min: 1, max: 1000 }))";
+    return emitPrimitiveExpression("bigint");
   }
 
   if (checker.isArrayType(type) || checker.isTupleType(type)) {
@@ -936,6 +942,65 @@ function emitExpression(
   }
 
   return `{} as ${typeText}`;
+}
+
+function emitPrimitiveExpression(kind: "string" | "number" | "boolean" | "bigint"): string {
+  if (kind === "string") {
+    return "faker.word.noun()";
+  }
+  if (kind === "number") {
+    return "faker.number.int({ min: 1, max: 1000 })";
+  }
+  if (kind === "boolean") {
+    return "faker.datatype.boolean()";
+  }
+  return "BigInt(faker.number.int({ min: 1, max: 1000 }))";
+}
+
+function getBrandedPrimitiveKind(type: ts.Type): "string" | "number" | "boolean" | "bigint" | null {
+  if ((type.flags & ts.TypeFlags.Intersection) === 0) {
+    return null;
+  }
+
+  const intersection = type as ts.IntersectionType;
+  let primitiveKind: "string" | "number" | "boolean" | "bigint" | null = null;
+
+  for (const member of intersection.types) {
+    const memberPrimitive = getPrimitiveKind(member);
+    if (memberPrimitive) {
+      if (primitiveKind && primitiveKind !== memberPrimitive) {
+        return null;
+      }
+      primitiveKind = memberPrimitive;
+      continue;
+    }
+
+    const isBrandLikeObject =
+      (member.flags & ts.TypeFlags.Object) !== 0 ||
+      (member.flags & ts.TypeFlags.Any) !== 0 ||
+      (member.flags & ts.TypeFlags.Unknown) !== 0;
+    if (!isBrandLikeObject) {
+      return null;
+    }
+  }
+
+  return primitiveKind;
+}
+
+function getPrimitiveKind(type: ts.Type): "string" | "number" | "boolean" | "bigint" | null {
+  if ((type.flags & ts.TypeFlags.String) !== 0 || type.isStringLiteral()) {
+    return "string";
+  }
+  if ((type.flags & ts.TypeFlags.Number) !== 0 || type.isNumberLiteral()) {
+    return "number";
+  }
+  if ((type.flags & ts.TypeFlags.Boolean) !== 0 || (type.flags & ts.TypeFlags.BooleanLiteral) !== 0) {
+    return "boolean";
+  }
+  if ((type.flags & ts.TypeFlags.BigInt) !== 0) {
+    return "bigint";
+  }
+  return null;
 }
 
 function areAllStringLiterals(types: ts.Type[]): boolean {

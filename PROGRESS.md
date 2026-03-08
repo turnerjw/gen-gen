@@ -40,7 +40,7 @@ Last updated: 2026-03-07
   - Skip specific generators or fields inline in source file
 - [x] Explicit optional/readonly/index-signature policy options
   - Define configurable behavior contract instead of implicit behavior
-- [ ] Branded/opaque type support ergonomics
+- [x] Branded/opaque type support ergonomics
   - Dedicated alias/type mapping strategy beyond generic faker overrides
 - [ ] Enum-specific strategy polish
   - Improve explicit enum member handling and docs
@@ -61,8 +61,8 @@ Last updated: 2026-03-07
 
 ## Suggested Next Implementation Order
 
-1. Branded/opaque type ergonomics
-2. Enum-specific strategy polish
-3. Output formatting pass
-4. Fully pluggable faker strategy hooks API
-5. Additional CLI/API UX polish
+1. Enum-specific strategy polish
+2. Output formatting pass
+3. Fully pluggable faker strategy hooks API
+4. Additional CLI/API UX polish
+5. Advanced type-mapping presets

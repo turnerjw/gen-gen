@@ -167,6 +167,26 @@ Behavior notes:
 - `readonlyProperties: "warn"` still includes readonly fields, but emits warnings.
 - `indexSignatures: "warn"` emits warnings when index signatures are present but not materialized into generated keys.
 
+### Branded/Opaque Primitive Aliases
+
+Branded/opaque primitive intersections are generated as primitive faker values with a cast back to the alias type.
+
+Example:
+
+```ts
+type UserId = string & { readonly __brand: "UserId" };
+type AmountCents = number & { readonly __brand: "AmountCents" };
+```
+
+Generated values are emitted like:
+
+```ts
+id: faker.word.noun() as UserId
+total: faker.number.int({ min: 1, max: 1000 }) as AmountCents
+```
+
+If you need specific value formats for branded fields (for example UUID-like `UserId`), use `FakerOverrides` by type or path key.
+
 ## Vite plugin
 
 ```ts

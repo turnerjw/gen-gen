@@ -9,6 +9,7 @@
 - `data-gen-custom-faker.ts` + `custom-faker-types.ts` + `usage-custom-faker.ts`: custom faker override expressions.
 - `data-gen-ignore.ts` + `ignore-types.ts` + `usage-ignore.ts`: `@gen-gen-ignore` for type/property control.
 - `data-gen-policy.ts` + `policy-types.ts` + `usage-policy.ts`: optional/readonly/index-signature policy settings.
+- `data-gen-branded.ts` + `branded-types.ts` + `usage-branded.ts`: branded/opaque primitive alias generation.
 
 Generate each file with:
 
@@ -20,4 +21,5 @@ bun ./dist/cli.js --input example/data-gen-filters.ts --include Account,Session 
 bun ./dist/cli.js --input example/data-gen-custom-faker.ts --faker-override email=faker.internet.email()
 bun ./dist/cli.js --input example/data-gen-ignore.ts
 bun ./dist/cli.js --input example/data-gen-policy.ts --optional-properties omit --readonly-properties warn --index-signatures warn
+bun ./dist/cli.js --input example/data-gen-branded.ts
 ```

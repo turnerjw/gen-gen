@@ -630,4 +630,31 @@ import type { Config } from "./types";
     expect(result.warnings).toContain("Index signature (string) not materialized at Config.values.");
     expect(result.content).toContain("id: faker.word.noun()");
   });
+
+  test("generates branded/opaque primitive aliases using primitive faker values with casts", async () => {
+    const cwd = await createFixture({
+      "types.ts": `
+export type UserId = string & { readonly __brand: "UserId" };
+export type AmountCents = number & { readonly __brand: "AmountCents" };
+export type Order = {
+  id: UserId;
+  total: AmountCents;
+};
+`,
+      "data-gen.ts": `
+import type { Order } from "./types";
+
+/**
+ * Generated below - DO NOT EDIT
+ */
+`,
+    });
+
+    const result = await generateDataFile({cwd, write: false});
+
+    expect(result.content).toContain("id: faker.word.noun() as");
+    expect(result.content).toContain(".UserId");
+    expect(result.content).toContain("total: faker.number.int({ min: 1, max: 1000 }) as");
+    expect(result.content).toContain(".AmountCents");
+  });
 });

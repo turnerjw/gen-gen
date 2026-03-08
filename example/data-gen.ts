@@ -32,16 +32,51 @@ type GenGenHelpers<T extends object> = {
 
 type GenGenOverrides<T extends object> = Partial<T> | ((helpers: GenGenHelpers<T>) => Partial<T>);
 
-function __genGenCreateHelper<T extends object>(base: T): (overrides?: GenGenOverrides<T>) => T {
-  return (overrides) => {
+function __genGenIsMergeable(value: unknown): value is Record<string, unknown> {
+  return !!value && typeof value === "object" && !Array.isArray(value) && !(value instanceof Date);
+}
+
+function __genGenMergeDeep<T>(base: T, overrides: Partial<T> | undefined): T {
+  if (!overrides) {
+    return base;
+  }
+
+  if (!__genGenIsMergeable(base) || !__genGenIsMergeable(overrides)) {
+    return overrides as T;
+  }
+
+  const result: Record<string, unknown> = { ...base };
+  for (const [key, overrideValue] of Object.entries(overrides)) {
+    const baseValue = result[key];
+    if (__genGenIsMergeable(baseValue) && __genGenIsMergeable(overrideValue)) {
+      result[key] = __genGenMergeDeep(baseValue, overrideValue);
+      continue;
+    }
+
+    result[key] = overrideValue;
+  }
+
+  return result as T;
+}
+
+function __genGenCreateHelper<T extends object>(
+  base: T,
+  helperCache: WeakMap<object, unknown> = new WeakMap(),
+): (overrides?: GenGenOverrides<T>) => T {
+  const cached = helperCache.get(base as object);
+  if (cached) {
+    return cached as (overrides?: GenGenOverrides<T>) => T;
+  }
+
+  const generate = (overrides?: GenGenOverrides<T>): T => {
     const helpers = {} as GenGenHelpers<T>;
     for (const [key, value] of Object.entries(base as Record<string, unknown>)) {
-      if (!value || typeof value !== "object" || Array.isArray(value) || value instanceof Date) {
+      if (!__genGenIsMergeable(value)) {
         continue;
       }
 
       const helperName = `generate${key[0]?.toUpperCase() ?? ""}${key.slice(1)}`;
-      (helpers as Record<string, unknown>)[helperName] = __genGenCreateHelper(value as object);
+      (helpers as Record<string, unknown>)[helperName] = __genGenCreateHelper(value, helperCache);
     }
 
     const resolvedOverrides: Partial<T> | undefined =
@@ -49,11 +84,11 @@ function __genGenCreateHelper<T extends object>(base: T): (overrides?: GenGenOve
         ? (overrides as (nestedHelpers: GenGenHelpers<T>) => Partial<T>)(helpers)
         : overrides;
 
-    return {
-      ...base,
-      ...resolvedOverrides,
-    };
+    return { ...base, ...resolvedOverrides };
   };
+
+  helperCache.set(base as object, generate);
+  return generate;
 }
 
 export type GenerateUnnamedNestedExampleCallbackParam = (helpers: GenGenHelpers<UnnamedNestedExample>) => Partial<UnnamedNestedExample>;
@@ -62,13 +97,13 @@ export function generateUnnamedNestedExample(overrides?: Partial<UnnamedNestedEx
   const base: UnnamedNestedExample = {
     a: faker.word.noun(),
     b: {
-    c: faker.number.int({ min: 1, max: 1000 }),
-    d: faker.datatype.boolean(),
-    e: {
-    f: faker.word.noun(),
-    g: faker.number.int({ min: 1, max: 1000 }),
-  },
-  },
+      c: faker.number.int({ min: 1, max: 1000 }),
+      d: faker.datatype.boolean(),
+      e: {
+        f: faker.word.noun(),
+        g: faker.number.int({ min: 1, max: 1000 }),
+      },
+    },
   };
   const generate = __genGenCreateHelper(base);
   return generate(overrides);

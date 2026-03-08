@@ -96,14 +96,14 @@ export function generateUnionExample(overrides?: Partial<UnionExample> | Generat
     status: faker.helpers.arrayElement(["idle", "loading", "error"]),
     priority: faker.helpers.arrayElement([1, 2, 3]),
     payload: faker.helpers.arrayElement([{
-    kind: "user",
-    userId: faker.word.noun(),
-    admin: faker.datatype.boolean(),
-  }, {
-    kind: "order",
-    orderId: faker.number.int({ min: 1, max: 1000 }),
-    total: faker.number.int({ min: 1, max: 1000 }),
-  }]),
+      kind: "user",
+      userId: faker.word.noun(),
+      admin: faker.datatype.boolean(),
+    }, {
+      kind: "order",
+      orderId: faker.number.int({ min: 1, max: 1000 }),
+      total: faker.number.int({ min: 1, max: 1000 }),
+    }]),
   };
   const generate = __genGenCreateHelper(base);
   return generate(overrides);

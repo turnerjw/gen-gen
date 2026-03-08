@@ -105,14 +105,3 @@ export function generateAccount(overrides?: Partial<Account> | GenerateAccountCa
   const generate = __genGenCreateHelper(base);
   return generate(overrides);
 }
-
-export type GenerateSessionCallbackParam = (helpers: GenGenHelpers<Session>) => Partial<Session>;
-
-export function generateSession(overrides?: Partial<Session> | GenerateSessionCallbackParam): Session {
-  const base: Session = {
-    token: faker.word.noun(),
-    account: generateAccount(),
-  };
-  const generate = __genGenCreateHelper(base);
-  return generate(overrides);
-}

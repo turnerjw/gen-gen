@@ -694,4 +694,33 @@ import type { Ticket } from "./types";
     expect(result.content).toContain("priority: faker.helpers.arrayElement([1, 2, 10]) as");
     expect(result.content).toContain(".Priority");
   });
+
+  test("formats nested object literals with depth-aware indentation", async () => {
+    const cwd = await createFixture({
+      "types.ts": `
+export type Deep = {
+  a: string;
+  b: {
+    c: number;
+    e: {
+      f: string;
+    };
+  };
+};
+`,
+      "data-gen.ts": `
+import type { Deep } from "./types";
+
+/**
+ * Generated below - DO NOT EDIT
+ */
+`,
+    });
+
+    const result = await generateDataFile({cwd, write: false});
+
+    expect(result.content).toContain("    b: {");
+    expect(result.content).toContain("      e: {");
+    expect(result.content).toContain("        f: faker.word.noun()");
+  });
 });

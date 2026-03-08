@@ -94,12 +94,12 @@ export type GenerateUserFixtureCallbackParam = (helpers: GenGenHelpers<UserFixtu
 export function generateUserFixture(overrides?: Partial<UserFixture> | GenerateUserFixtureCallbackParam): UserFixture {
   const base: UserFixture = {
     profile: {
-    name: faker.word.noun(),
-    settings: {
-    theme: faker.word.noun(),
-    locale: faker.word.noun(),
-  },
-  },
+      name: faker.word.noun(),
+      settings: {
+        theme: faker.word.noun(),
+        locale: faker.word.noun(),
+      },
+    },
   };
   const generate = __genGenCreateHelper(base);
   return generate(overrides);

@@ -52,7 +52,7 @@ Last updated: 2026-03-07
 
 ### Nice to Have
 
-- [ ] Output formatting pass for generated code readability
+- [x] Output formatting pass for generated code readability
 
 ## Notes on Scope Decisions
 
@@ -61,8 +61,8 @@ Last updated: 2026-03-07
 
 ## Suggested Next Implementation Order
 
-1. Output formatting pass
-2. Fully pluggable faker strategy hooks API
-3. Additional CLI/API UX polish
-4. Advanced type-mapping presets
-5. Performance tuning for very large type graphs
+1. Fully pluggable faker strategy hooks API
+2. Additional CLI/API UX polish
+3. Advanced type-mapping presets
+4. Performance tuning for very large type graphs
+5. Extended watch diagnostics and metrics

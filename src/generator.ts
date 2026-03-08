@@ -613,7 +613,7 @@ function emitObjectLiteral(
     if (hasGenGenIgnoreTag(declaration, context.sourceFile)) {
       const propertyName = needsQuotedProperty(property.name) ? JSON.stringify(property.name) : property.name;
       const propertyType = checker.getTypeOfSymbolAtLocation(property, declaration);
-      lines.push(`  ${propertyName}: ${emitIgnoredExpression(propertyType, context)},`);
+      lines.push(formatObjectPropertyLine(propertyName, emitIgnoredExpression(propertyType, context)));
       continue;
     }
 
@@ -630,7 +630,7 @@ function emitObjectLiteral(
       declaredTypeText,
     );
     const propertyName = needsQuotedProperty(property.name) ? JSON.stringify(property.name) : property.name;
-    lines.push(`  ${propertyName}: ${expression},`);
+    lines.push(formatObjectPropertyLine(propertyName, expression));
   }
 
   lines.push("}");
@@ -1140,7 +1140,7 @@ function emitInlineObject(
     if (hasGenGenIgnoreTag(declaration, context.sourceFile)) {
       const propertyName = needsQuotedProperty(property.name) ? JSON.stringify(property.name) : property.name;
       const propertyType = checker.getTypeOfSymbolAtLocation(property, declaration);
-      lines.push(`  ${propertyName}: ${emitIgnoredExpression(propertyType, context)},`);
+      lines.push(formatObjectPropertyLine(propertyName, emitIgnoredExpression(propertyType, context)));
       continue;
     }
 
@@ -1155,7 +1155,7 @@ function emitInlineObject(
       getDeclaredTypeText(declaration, context.sourceFile),
     );
     const propertyName = needsQuotedProperty(property.name) ? JSON.stringify(property.name) : property.name;
-    lines.push(`  ${propertyName}: ${expression},`);
+    lines.push(formatObjectPropertyLine(propertyName, expression));
   }
 
   lines.push("}");
@@ -1463,6 +1463,23 @@ function isDateType(type: ts.Type): boolean {
 
 function needsQuotedProperty(name: string): boolean {
   return !/^[$A-Z_][0-9A-Z_$]*$/i.test(name);
+}
+
+function formatObjectPropertyLine(name: string, expression: string): string {
+  const lines = expression.split("\n");
+  if (lines.length <= 1) {
+    return `  ${name}: ${expression},`;
+  }
+
+  const [firstLine, ...rest] = lines;
+  const output = [`  ${name}: ${firstLine}`];
+  for (const line of rest) {
+    output.push(`  ${line}`);
+  }
+
+  const last = output[output.length - 1];
+  output[output.length - 1] = `${last},`;
+  return output.join("\n");
 }
 
 function formatReturnBlock(objectLiteral: string): string {

@@ -25,7 +25,7 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "gen:example": "bun ./dist/cli.js --input example/data-gen.ts",
+    "gen:example": "npm run build && bun ./dist/cli.js --input example/data-gen.ts && bun ./dist/cli.js --input example/data-gen-generics.ts && bun ./dist/cli.js --input example/data-gen-unions.ts && bun ./dist/cli.js --input example/data-gen-deep-merge.ts --deep-merge && bun ./dist/cli.js --input example/data-gen-filters.ts --include Account,Session --exclude Session && bun ./dist/cli.js --input example/data-gen-custom-faker.ts --faker-override 'email=faker.internet.email()' && bun ./dist/cli.js --input example/data-gen-ignore.ts && bun ./dist/cli.js --input example/data-gen-policy.ts --optional-properties omit --readonly-properties warn --index-signatures warn && bun ./dist/cli.js --input example/data-gen-branded.ts && bun ./dist/cli.js --input example/data-gen-enums.ts",
     "test": "bun test"
   },
   "devDependencies": {

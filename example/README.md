@@ -15,6 +15,7 @@
 Generate each file with:
 
 ```bash
+bun ./dist/cli.js --input example/data-gen.ts
 bun ./dist/cli.js --input example/data-gen-generics.ts
 bun ./dist/cli.js --input example/data-gen-unions.ts
 bun ./dist/cli.js --input example/data-gen-deep-merge.ts --deep-merge

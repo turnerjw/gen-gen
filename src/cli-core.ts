@@ -21,6 +21,7 @@ export interface CliOptions {
   fakerStrategyModule?: string;
   fakerStrategy?: FakerStrategyHook;
   typeMappingPresets: TypeMappingPresetName[];
+  watchDiagnostics: boolean;
   watch: boolean;
   deepMerge: boolean;
   include: string[];
@@ -88,6 +89,7 @@ export function parseArgs(args: string[]): CliOptions {
     readonlyProperties: "include",
     indexSignatures: "ignore",
     typeMappingPresets: [],
+    watchDiagnostics: false,
     watch: false,
     deepMerge: false,
     include: [],
@@ -181,6 +183,11 @@ export function parseArgs(args: string[]): CliOptions {
       continue;
     }
 
+    if (arg === "--watch-diagnostics") {
+      options.watchDiagnostics = true;
+      continue;
+    }
+
     if (arg === "--deep-merge") {
       options.deepMerge = true;
       continue;
@@ -234,6 +241,8 @@ Options:
       --preset <name[,name...]>
                      Type-mapping preset(s): common, commerce
   -w, --watch         Regenerate on file changes
+      --watch-diagnostics
+                     Log watch triggers and per-run timing/summary metrics
       --deep-merge    Deep merge overrides instead of shallow spread
       --include       Comma-separated generator/type filters to include
       --exclude       Comma-separated generator/type filters to exclude
@@ -254,6 +263,7 @@ export function createWatchModeRuntime(
   let timer: ReturnType<typeof setTimeout> | undefined;
   let running = false;
   let queued = false;
+  let runCount = 0;
 
   const closeWatchers = (): void => {
     if (timer) {
@@ -277,6 +287,13 @@ export function createWatchModeRuntime(
     }, 80);
   };
 
+  const triggerRun = (file?: string): void => {
+    if (options.watchDiagnostics && file) {
+      deps.log(`[gen-gen] watch trigger: ${path.relative(process.cwd(), path.resolve(file))}`);
+    }
+    scheduleRun();
+  };
+
   const syncWatchers = (files: string[]): void => {
     const next = new Set(files.map((file) => path.resolve(file)));
     if (options.fakerStrategyModule) {
@@ -297,7 +314,7 @@ export function createWatchModeRuntime(
       }
 
       const watcher = deps.watch(file, () => {
-        scheduleRun();
+        triggerRun(file);
       });
       watchers.set(file, watcher);
     }
@@ -310,6 +327,8 @@ export function createWatchModeRuntime(
     }
 
     running = true;
+    runCount += 1;
+    const startedAt = Date.now();
     try {
       const fakerStrategy = deps.resolveFakerStrategy ? await deps.resolveFakerStrategy(options) : options.fakerStrategy;
       const result = await deps.generate({
@@ -336,6 +355,12 @@ export function createWatchModeRuntime(
 
       const verb = result.changed ? "Generated" : "No changes for";
       deps.log(`[gen-gen] ${verb} ${path.relative(process.cwd(), result.inputPath)}`);
+      if (options.watchDiagnostics) {
+        const elapsedMs = Date.now() - startedAt;
+        deps.log(
+          `[gen-gen] watch run #${runCount} metrics: ${elapsedMs}ms, changed=${result.changed}, warnings=${result.warnings.length}, watched=${result.watchedFiles.length}`,
+        );
+      }
       syncWatchers(result.watchedFiles);
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : String(error);
@@ -351,7 +376,7 @@ export function createWatchModeRuntime(
 
   return {
     run,
-    scheduleRun,
+    scheduleRun: () => triggerRun(),
     closeWatchers,
   };
 }
@@ -375,6 +400,9 @@ export async function runWatchMode(options: CliOptions): Promise<void> {
   });
 
   console.log("[gen-gen] Watching for changes...");
+  if (options.watchDiagnostics) {
+    console.log("[gen-gen] Watch diagnostics enabled.");
+  }
   await runtime.run();
   await new Promise(() => {});
 }

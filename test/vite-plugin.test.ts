@@ -160,4 +160,50 @@ describe("vite plugin", () => {
     expect(errors).toHaveLength(1);
     expect(errors[0]?.message).toBe("[gen-gen] generation failed during watch");
   });
+
+  test("emits watch diagnostics logs when enabled", async () => {
+    const listeners: Array<(file: string) => void> = [];
+    const warnings: string[] = [];
+    let generateCall = 0;
+
+    const plugin = createGenGenPlugin(
+      {
+        watchDiagnostics: true,
+      },
+      {
+        async generate() {
+          generateCall += 1;
+          if (generateCall === 1) {
+            return createResult({watchedFiles: ["/tmp/a.ts"]});
+          }
+          return createResult({watchedFiles: ["/tmp/a.ts"], changed: true});
+        },
+        warn(message) {
+          warnings.push(message);
+        },
+        error() {},
+      },
+    );
+
+    plugin.configResolved({root: "/workspace/project"});
+    await plugin.buildStart.call({
+      addWatchFile() {},
+    });
+
+    plugin.configureServer({
+      watcher: {
+        on(_event, listener) {
+          listeners.push(listener);
+        },
+      },
+      ws: {
+        send() {},
+      },
+    });
+
+    await listeners[0]?.("/tmp/a.ts");
+
+    expect(warnings.some((message) => message.includes("vite watch trigger:"))).toBeTrue();
+    expect(warnings.some((message) => message.includes("vite watch run #2 metrics"))).toBeTrue();
+  });
 });

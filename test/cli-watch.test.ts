@@ -13,6 +13,11 @@ function baseOptions(): CliOptions {
     check: false,
     dryRun: false,
     failOnWarn: false,
+    optionalProperties: "include",
+    readonlyProperties: "include",
+    indexSignatures: "ignore",
+    typeMappingPresets: [],
+    watchDiagnostics: false,
     watch: true,
     deepMerge: false,
     include: [],
@@ -194,6 +199,49 @@ describe("watch mode runtime", () => {
     await runtime.run();
     expect(watchedFiles.has(path.resolve("/tmp/project/example.ts"))).toBeTrue();
     expect(watchedFiles.has(path.resolve("/tmp/project/strategy.ts"))).toBeTrue();
+    runtime.closeWatchers();
+  });
+
+  test("emits watch diagnostics logs when enabled", async () => {
+    const logs: string[] = [];
+    const listeners = new Map<string, () => void>();
+
+    const runtime = createWatchModeRuntime(
+      {
+        ...baseOptions(),
+        watchDiagnostics: true,
+      },
+      {
+        watch(file, listener): WatchHandle {
+          listeners.set(path.resolve(file), listener);
+          return {
+            close() {},
+          };
+        },
+        async generate() {
+          return createResult("/tmp/data-gen.ts", ["/tmp/a.ts"]);
+        },
+        log(message) {
+          logs.push(message);
+        },
+        warn() {},
+        error() {},
+        setTimer(callback, delayMs) {
+          return setTimeout(callback, delayMs);
+        },
+        clearTimer(timer) {
+          clearTimeout(timer);
+        },
+      },
+    );
+
+    await runtime.run();
+    listeners.get(path.resolve("/tmp/a.ts"))?.();
+    await Bun.sleep(140);
+
+    expect(logs.some((message) => message.includes("watch run #1 metrics"))).toBeTrue();
+    expect(logs.some((message) => message.includes("watch run #2 metrics"))).toBeTrue();
+    expect(logs.some((message) => message.includes("watch trigger:"))).toBeTrue();
     runtime.closeWatchers();
   });
 });

@@ -64,6 +64,7 @@ Options:
 - `--index-signatures <ignore|warn>`: ignore or warn when index signatures are not materialized
 - `--preset <name[,name...]>`: enable type-mapping presets (`common`, `commerce`)
 - `-w, --watch`: run continuously and regenerate on changes
+- `--watch-diagnostics`: log watch trigger + per-run timing/count metrics
 - `--deep-merge`: merge overrides deeply instead of shallow spread
 - `--include`: comma-separated filters to include specific generators/types
 - `--exclude`: comma-separated filters to exclude specific generators/types
@@ -220,6 +221,7 @@ export default defineConfig({
     genGenPlugin({
       input: "data-gen.ts",
       failOnWarn: true,
+      watchDiagnostics: true,
       deepMerge: true,
       include: ["User", "Account"],
       fakerOverrides: {

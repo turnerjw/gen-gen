@@ -21,4 +21,10 @@ describe("cli-core parseArgs", () => {
   test("throws for unknown preset names", () => {
     expect(() => parseArgs(["--preset", "unknown"])).toThrow("Unknown preset(s): unknown. Allowed presets: common, commerce.");
   });
+
+  test("parses --watch-diagnostics", () => {
+    const options = parseArgs(["--watch", "--watch-diagnostics"]);
+    expect(options.watch).toBeTrue();
+    expect(options.watchDiagnostics).toBeTrue();
+  });
 });

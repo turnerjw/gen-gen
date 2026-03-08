@@ -32,6 +32,9 @@ Last updated: 2026-03-07
   - Precedence: `FakerOverrides` > `fakerStrategy` > preset > defaults
 - Performance tuning for large type graphs:
   - Cached `typeToString`, `getPropertiesOfType`, and enum value extraction during a generation run
+- Extended watch diagnostics and metrics:
+  - CLI `--watch-diagnostics`
+  - Plugin `watchDiagnostics` run/trigger metrics
 - Object-only root generator policy (skip scalar/array roots)
 - Union handling improvements (literal unions and discriminated object unions)
 - Diagnostics:
@@ -72,8 +75,8 @@ Last updated: 2026-03-07
 
 ## Suggested Next Implementation Order
 
-1. Extended watch diagnostics and metrics
-2. Expanded generated helper typing ergonomics
-3. Optional generator output presets
-4. Additional union/recursive edge-case hardening
-5. Strategy authoring ergonomics (helper utilities)
+1. Expanded generated helper typing ergonomics
+2. Optional generator output presets
+3. Additional union/recursive edge-case hardening
+4. Strategy authoring ergonomics (helper utilities)
+5. Multi-file incremental generation optimization

@@ -15,6 +15,7 @@ export interface GenGenPluginOptions {
   propertyPolicy?: Partial<PropertyPolicy>;
   deepMerge?: boolean;
   typeMappingPresets?: TypeMappingPresetName[];
+  watchDiagnostics?: boolean;
   include?: string[];
   exclude?: string[];
   fakerOverrides?: Record<string, FakerOverrideInput>;
@@ -68,8 +69,11 @@ const defaultPluginDeps: PluginDeps = {
 export function createGenGenPlugin(options: GenGenPluginOptions = {}, deps: PluginDeps = defaultPluginDeps) {
   let root = process.cwd();
   const watchedFiles = new Set<string>();
+  let watchRunCount = 0;
 
-  async function runGeneration(write: boolean): Promise<GenerateResult> {
+  async function runGeneration(write: boolean, triggerFile?: string): Promise<GenerateResult> {
+    watchRunCount += 1;
+    const startedAt = Date.now();
     const result = await deps.generate({
       input: options.input,
       cwd: root,
@@ -92,6 +96,16 @@ export function createGenGenPlugin(options: GenGenPluginOptions = {}, deps: Plug
 
     for (const warning of result.warnings) {
       deps.warn(`[gen-gen] ${warning}`);
+    }
+
+    if (options.watchDiagnostics) {
+      if (triggerFile) {
+        deps.warn(`[gen-gen] vite watch trigger: ${path.resolve(triggerFile)}`);
+      }
+      const elapsedMs = Date.now() - startedAt;
+      deps.warn(
+        `[gen-gen] vite watch run #${watchRunCount} metrics: ${elapsedMs}ms, changed=${result.changed}, warnings=${result.warnings.length}, watched=${result.watchedFiles.length}`,
+      );
     }
 
     return result;
@@ -118,7 +132,7 @@ export function createGenGenPlugin(options: GenGenPluginOptions = {}, deps: Plug
         }
 
         try {
-          const result = await runGeneration(true);
+          const result = await runGeneration(true, file);
           if (result.changed) {
             server.ws.send({type: "full-reload"});
           }

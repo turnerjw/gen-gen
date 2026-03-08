@@ -30,6 +30,7 @@ describe("vite plugin", () => {
           indexSignatures: "warn",
         },
         include: ["User"],
+        fakerStrategy: () => "faker.string.uuid()",
       },
       {
         async generate(options) {
@@ -62,6 +63,7 @@ describe("vite plugin", () => {
       indexSignatures: "warn",
     });
     expect(generatedOptions[0]?.include).toEqual(["User"]);
+    expect(typeof generatedOptions[0]?.fakerStrategy).toBe("function");
   });
 
   test("configureServer regenerates and reloads only for watched changed files", async () => {

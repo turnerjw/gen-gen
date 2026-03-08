@@ -437,6 +437,78 @@ import type { User } from "./types";
     expect(result.content).toContain("age: 42");
   });
 
+  test("applies fakerStrategy when no direct FakerOverrides match", async () => {
+    const cwd = await createFixture({
+      "types.ts": `
+export type User = {
+  id: string;
+  email: string;
+  age: number;
+};
+`,
+      "data-gen.ts": `
+import type { User } from "./types";
+
+/**
+ * Generated below - DO NOT EDIT
+ */
+`,
+    });
+
+    const result = await generateDataFile({
+      cwd,
+      write: false,
+      fakerStrategy(context) {
+        if (context.rootTypeText === "User" && context.path === "id") {
+          return {expression: "faker.string.uuid()", invokeMode: "raw"};
+        }
+        if (context.path === "email") {
+          return (faker) => faker.internet.email();
+        }
+        return undefined;
+      },
+    });
+
+    expect(result.content).toContain("id: faker.string.uuid()");
+    expect(result.content).toContain("email: ((faker) => faker.internet.email())(faker)");
+    expect(result.content).toContain("age: faker.number.int({ min: 1, max: 1000 })");
+  });
+
+  test("prioritizes FakerOverrides over fakerStrategy", async () => {
+    const cwd = await createFixture({
+      "types.ts": `
+export type User = {
+  id: string;
+  email: string;
+};
+`,
+      "data-gen.ts": `
+import type { User } from "./types";
+
+/**
+ * Generated below - DO NOT EDIT
+ */
+`,
+    });
+
+    const result = await generateDataFile({
+      cwd,
+      write: false,
+      fakerOverrides: {
+        "User.id": "faker.string.alphanumeric(12)",
+      },
+      fakerStrategy(context) {
+        if (context.path === "id") {
+          return {expression: "faker.string.uuid()", invokeMode: "raw"};
+        }
+        return undefined;
+      },
+    });
+
+    expect(result.content).toContain("id: faker.string.alphanumeric(12)");
+    expect(result.content).not.toContain("id: faker.string.uuid()");
+  });
+
   test("warns for unmatched include/exclude filters and unused faker overrides", async () => {
     const cwd = await createFixture({
       "types.ts": `

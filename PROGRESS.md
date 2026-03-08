@@ -21,6 +21,9 @@ Last updated: 2026-03-07
   - CLI `--faker-override key=expression`
   - Plugin/API `fakerOverrides`
   - Function-form override invocation modes
+- Pluggable faker strategy hooks:
+  - API/plugin `fakerStrategy(context) => override | undefined`
+  - Direct overrides still take precedence over strategy
 - Object-only root generator policy (skip scalar/array roots)
 - Union handling improvements (literal unions and discriminated object unions)
 - Diagnostics:
@@ -56,13 +59,13 @@ Last updated: 2026-03-07
 
 ## Notes on Scope Decisions
 
-- "Custom faker strategy hooks" are partially delivered through `FakerOverrides` (file/CLI/plugin/API).
-- A fully pluggable strategy API is still open if needed (e.g., external resolver callbacks).
+- Pluggable faker strategy hooks are now supported via API/plugin `fakerStrategy`.
+- CLI still favors explicit `--faker-override` expressions for simplicity.
 
 ## Suggested Next Implementation Order
 
-1. Fully pluggable faker strategy hooks API
-2. Additional CLI/API UX polish
-3. Advanced type-mapping presets
-4. Performance tuning for very large type graphs
-5. Extended watch diagnostics and metrics
+1. Additional CLI/API UX polish
+2. Advanced type-mapping presets
+3. Performance tuning for very large type graphs
+4. Extended watch diagnostics and metrics
+5. Expanded generated helper typing ergonomics

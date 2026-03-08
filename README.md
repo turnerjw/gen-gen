@@ -298,6 +298,8 @@ If a configured include/exclude filter does not match any generation target, `ge
 
 Use function values in `FakerOverrides` (and plugin/API `fakerOverrides`) for type-safe expressions. String values from CLI are still supported for convenience.
 
+For pluggable logic across many fields, use API/plugin `fakerStrategy` (a callback receiving field metadata and returning an override expression).
+
 Faker override keys are matched in this order:
 
 1. `<RootType>.<path.to.field>` (for example `Pokemon.id`)
@@ -306,6 +308,25 @@ Faker override keys are matched in this order:
 4. type text (for example `APIResponse<Pokemon>`)
 
 Unused faker override keys also emit warnings, which helps catch typos in override paths.
+
+`fakerStrategy` runs only when no direct `FakerOverrides` key matched.
+
+Example:
+
+```ts
+generateDataFile({
+  input: "data-gen.ts",
+  fakerStrategy(ctx) {
+    if (ctx.rootTypeText === "User" && ctx.path === "id") {
+      return {expression: "faker.string.uuid()", invokeMode: "raw"};
+    }
+    if (ctx.path.endsWith("email")) {
+      return (faker) => faker.internet.email();
+    }
+    return undefined;
+  },
+});
+```
 
 CLI example:
 

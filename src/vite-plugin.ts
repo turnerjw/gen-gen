@@ -1,5 +1,11 @@
 import path from "node:path";
-import {generateDataFile, type FakerOverrideInput, type GenerateResult, type PropertyPolicy} from "./generator.js";
+import {
+  generateDataFile,
+  type FakerOverrideInput,
+  type FakerStrategyHook,
+  type GenerateResult,
+  type PropertyPolicy,
+} from "./generator.js";
 
 export interface GenGenPluginOptions {
   input?: string;
@@ -10,6 +16,7 @@ export interface GenGenPluginOptions {
   include?: string[];
   exclude?: string[];
   fakerOverrides?: Record<string, FakerOverrideInput>;
+  fakerStrategy?: FakerStrategyHook;
 }
 
 interface ViteLikePluginContext {
@@ -37,6 +44,7 @@ interface PluginDeps {
     include?: string[];
     exclude?: string[];
     fakerOverrides?: Record<string, FakerOverrideInput>;
+    fakerStrategy?: FakerStrategyHook;
   }): Promise<GenerateResult>;
   warn(message: string): void;
   error(message: string, error: unknown): void;
@@ -70,6 +78,7 @@ export function createGenGenPlugin(options: GenGenPluginOptions = {}, deps: Plug
       include: options.include,
       exclude: options.exclude,
       fakerOverrides: options.fakerOverrides,
+      fakerStrategy: options.fakerStrategy,
     });
 
     watchedFiles.clear();

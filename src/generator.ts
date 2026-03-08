@@ -13,9 +13,27 @@ export interface GenerateOptions {
   include?: string[];
   exclude?: string[];
   fakerOverrides?: Record<string, FakerOverrideInput>;
+  fakerStrategy?: FakerStrategyHook;
 }
 
 export type FakerOverrideInput = string | ((faker: typeof import("@faker-js/faker").faker) => unknown);
+export type FakerStrategyResult =
+  | FakerOverrideInput
+  | {
+      expression: string;
+      invokeMode?: "raw" | "call" | "callWithFaker";
+    };
+export type FakerStrategyHook = (context: FakerStrategyContext) => FakerStrategyResult | undefined;
+
+export interface FakerStrategyContext {
+  rootTypeText: string;
+  propertyPath: string[];
+  propertyName?: string;
+  path: string;
+  typeText: string;
+  aliasTypeText?: string;
+  declaredTypeText?: string;
+}
 
 export interface GenerateResult {
   inputPath: string;
@@ -50,6 +68,7 @@ interface GenerationContext {
   activeTypes: Set<string>;
   maxDepth: number;
   fakerOverrides: Map<string, FakerOverrideSpec>;
+  fakerStrategy?: FakerStrategyHook;
   usedFakerOverrideKeys: Set<string>;
   policy: PropertyPolicy;
   emittedWarnings: Set<string>;
@@ -81,6 +100,7 @@ export async function generateDataFile(options: GenerateOptions = {}): Promise<G
     parsed.sourceFile,
     options.deepMerge ?? false,
     parsed.fakerOverrides,
+    options.fakerStrategy,
     resolvePropertyPolicy(options.propertyPolicy),
   );
   const warnings = [
@@ -587,6 +607,7 @@ function emitFunctions(
   sourceFile: ts.SourceFile,
   deepMerge: boolean,
   fakerOverrides: Map<string, FakerOverrideSpec>,
+  fakerStrategy: FakerStrategyHook | undefined,
   policy: PropertyPolicy,
 ): {
   content: string;
@@ -607,6 +628,7 @@ function emitFunctions(
     activeTypes: new Set<string>(),
     maxDepth: 8,
     fakerOverrides,
+    fakerStrategy,
     usedFakerOverrideKeys: new Set<string>(),
     policy,
     emittedWarnings: new Set<string>(),
@@ -804,6 +826,23 @@ function emitExpression(
       return `(${override.expression})()`;
     }
     return override.expression;
+  }
+
+  const strategyOverride = resolveFakerStrategy(context, {
+    rootTypeText,
+    propertyPath,
+    typeText: normalizedTypeText,
+    aliasTypeText: type.aliasSymbol?.getName(),
+    declaredTypeText,
+  });
+  if (strategyOverride) {
+    if (strategyOverride.invokeMode === "callWithFaker") {
+      return `(${strategyOverride.expression})(faker)`;
+    }
+    if (strategyOverride.invokeMode === "call") {
+      return `(${strategyOverride.expression})()`;
+    }
+    return strategyOverride.expression;
   }
 
   const brandedPrimitiveKind = getBrandedPrimitiveKind(type);
@@ -1249,6 +1288,48 @@ function resolveFakerOverride(
   }
 
   return undefined;
+}
+
+function resolveFakerStrategy(
+  context: GenerationContext,
+  value: {
+    rootTypeText: string;
+    propertyPath: string[];
+    typeText: string;
+    aliasTypeText?: string;
+    declaredTypeText?: string;
+  },
+): FakerOverrideSpec | undefined {
+  if (!context.fakerStrategy) {
+    return undefined;
+  }
+
+  const result = context.fakerStrategy({
+    rootTypeText: value.rootTypeText,
+    propertyPath: value.propertyPath,
+    propertyName: value.propertyPath[value.propertyPath.length - 1],
+    path: value.propertyPath.join("."),
+    typeText: value.typeText,
+    aliasTypeText: value.aliasTypeText,
+    declaredTypeText: value.declaredTypeText,
+  });
+  if (!result) {
+    return undefined;
+  }
+
+  return toFakerOverrideSpecFromStrategy(result);
+}
+
+function toFakerOverrideSpecFromStrategy(result: FakerStrategyResult): FakerOverrideSpec {
+  if (typeof result === "object" && result !== null && "expression" in result) {
+    return {
+      sourceKey: "<strategy>",
+      expression: result.expression,
+      invokeMode: result.invokeMode ?? "raw",
+    };
+  }
+
+  return toFakerOverrideSpec(result, "<strategy>");
 }
 
 function collectUnmatchedFilterWarnings(filterResult: {

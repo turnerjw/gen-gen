@@ -38,6 +38,7 @@ Union handling notes:
 - Literal unions (like `"a" | "b"` or `1 | 2 | 3`) are generated via `faker.helpers.arrayElement(...)`.
 - Boolean literal unions (`true | false`) use `faker.datatype.boolean()`.
 - Object unions (including discriminated unions) generate one branch and select via `faker.helpers.arrayElement(...)`.
+- Enums are generated from declared enum member values (string and numeric), then cast to the enum type.
 
 ## Install
 
@@ -186,6 +187,26 @@ total: faker.number.int({ min: 1, max: 1000 }) as AmountCents
 ```
 
 If you need specific value formats for branded fields (for example UUID-like `UserId`), use `FakerOverrides` by type or path key.
+
+### Enum Strategy
+
+For enum-typed fields, `gen-gen` reads declared enum member values and generates from that explicit set.
+
+Example:
+
+```ts
+enum Status {
+  Draft = "draft",
+  Active = "active",
+  Closed = "closed",
+}
+```
+
+Generated expression:
+
+```ts
+status: faker.helpers.arrayElement(["draft", "active", "closed"]) as Status
+```
 
 ## Vite plugin
 

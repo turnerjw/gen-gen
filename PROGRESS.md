@@ -42,7 +42,7 @@ Last updated: 2026-03-07
   - Define configurable behavior contract instead of implicit behavior
 - [x] Branded/opaque type support ergonomics
   - Dedicated alias/type mapping strategy beyond generic faker overrides
-- [ ] Enum-specific strategy polish
+- [x] Enum-specific strategy polish
   - Improve explicit enum member handling and docs
 
 ### Testing Gaps
@@ -61,8 +61,8 @@ Last updated: 2026-03-07
 
 ## Suggested Next Implementation Order
 
-1. Enum-specific strategy polish
-2. Output formatting pass
-3. Fully pluggable faker strategy hooks API
-4. Additional CLI/API UX polish
-5. Advanced type-mapping presets
+1. Output formatting pass
+2. Fully pluggable faker strategy hooks API
+3. Additional CLI/API UX polish
+4. Advanced type-mapping presets
+5. Performance tuning for very large type graphs

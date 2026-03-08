@@ -657,4 +657,41 @@ import type { Order } from "./types";
     expect(result.content).toContain("total: faker.number.int({ min: 1, max: 1000 }) as");
     expect(result.content).toContain(".AmountCents");
   });
+
+  test("generates string and numeric enums using explicit enum member values", async () => {
+    const cwd = await createFixture({
+      "types.ts": `
+export enum Status {
+  Draft = "draft",
+  Active = "active",
+  Closed = "closed",
+}
+
+export enum Priority {
+  Low = 1,
+  Medium,
+  High = 10,
+}
+
+export type Ticket = {
+  status: Status;
+  priority: Priority;
+};
+`,
+      "data-gen.ts": `
+import type { Ticket } from "./types";
+
+/**
+ * Generated below - DO NOT EDIT
+ */
+`,
+    });
+
+    const result = await generateDataFile({cwd, write: false});
+
+    expect(result.content).toContain('status: faker.helpers.arrayElement(["draft", "active", "closed"]) as');
+    expect(result.content).toContain(".Status");
+    expect(result.content).toContain("priority: faker.helpers.arrayElement([1, 2, 10]) as");
+    expect(result.content).toContain(".Priority");
+  });
 });

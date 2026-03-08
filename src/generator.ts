@@ -760,6 +760,14 @@ function emitExpression(
     return normalizedTypeText === brandedPrimitiveKind ? primitiveExpression : `${primitiveExpression} as ${normalizedTypeText}`;
   }
 
+  const enumValues = getEnumLiteralExpressions(type, context);
+  if (enumValues.length > 0) {
+    if (enumValues.length === 1) {
+      return `${enumValues[0]} as ${normalizedTypeText}`;
+    }
+    return `faker.helpers.arrayElement([${enumValues.join(", ")}]) as ${normalizedTypeText}`;
+  }
+
   if (type.isStringLiteral()) {
     return JSON.stringify(type.value);
   }
@@ -1001,6 +1009,92 @@ function getPrimitiveKind(type: ts.Type): "string" | "number" | "boolean" | "big
     return "bigint";
   }
   return null;
+}
+
+function getEnumLiteralExpressions(type: ts.Type, context: GenerationContext): string[] {
+  const declaration = getEnumDeclaration(type);
+  if (!declaration) {
+    return [];
+  }
+
+  const expressions: string[] = [];
+  let nextNumeric = 0;
+  for (const member of declaration.members) {
+    const value = getEnumMemberValue(member, context.checker, nextNumeric);
+    if (typeof value === "number") {
+      expressions.push(String(value));
+      nextNumeric = value + 1;
+      continue;
+    }
+    if (typeof value === "string") {
+      expressions.push(JSON.stringify(value));
+      continue;
+    }
+  }
+
+  return [...new Set(expressions)];
+}
+
+function getEnumDeclaration(type: ts.Type): ts.EnumDeclaration | undefined {
+  const symbols = [type.aliasSymbol, type.getSymbol()].filter((symbol): symbol is ts.Symbol => !!symbol);
+
+  for (const symbol of symbols) {
+    for (const declaration of symbol.declarations ?? []) {
+      if (ts.isEnumDeclaration(declaration)) {
+        return declaration;
+      }
+      if (ts.isEnumMember(declaration) && ts.isEnumDeclaration(declaration.parent)) {
+        return declaration.parent;
+      }
+    }
+  }
+
+  if ((type.flags & ts.TypeFlags.Union) !== 0) {
+    const union = type as ts.UnionType;
+    for (const member of union.types) {
+      const declaration = getEnumDeclaration(member);
+      if (declaration) {
+        return declaration;
+      }
+    }
+  }
+
+  return undefined;
+}
+
+function getEnumMemberValue(
+  member: ts.EnumMember,
+  checker: ts.TypeChecker,
+  nextNumeric: number,
+): string | number | undefined {
+  const constantValue = checker.getConstantValue(member);
+  if (typeof constantValue === "string" || typeof constantValue === "number") {
+    return constantValue;
+  }
+
+  if (!member.initializer) {
+    return nextNumeric;
+  }
+
+  if (ts.isStringLiteral(member.initializer) || ts.isNoSubstitutionTemplateLiteral(member.initializer)) {
+    return member.initializer.text;
+  }
+
+  if (ts.isNumericLiteral(member.initializer)) {
+    return Number(member.initializer.text);
+  }
+
+  if (ts.isPrefixUnaryExpression(member.initializer) && ts.isNumericLiteral(member.initializer.operand)) {
+    const value = Number(member.initializer.operand.text);
+    if (member.initializer.operator === ts.SyntaxKind.MinusToken) {
+      return -value;
+    }
+    if (member.initializer.operator === ts.SyntaxKind.PlusToken) {
+      return value;
+    }
+  }
+
+  return undefined;
 }
 
 function areAllStringLiterals(types: ts.Type[]): boolean {

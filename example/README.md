@@ -10,6 +10,7 @@
 - `data-gen-ignore.ts` + `ignore-types.ts` + `usage-ignore.ts`: `@gen-gen-ignore` for type/property control.
 - `data-gen-policy.ts` + `policy-types.ts` + `usage-policy.ts`: optional/readonly/index-signature policy settings.
 - `data-gen-branded.ts` + `branded-types.ts` + `usage-branded.ts`: branded/opaque primitive alias generation.
+- `data-gen-enums.ts` + `enum-types.ts` + `usage-enums.ts`: enum-aware value generation from enum members.
 
 Generate each file with:
 
@@ -22,4 +23,5 @@ bun ./dist/cli.js --input example/data-gen-custom-faker.ts --faker-override emai
 bun ./dist/cli.js --input example/data-gen-ignore.ts
 bun ./dist/cli.js --input example/data-gen-policy.ts --optional-properties omit --readonly-properties warn --index-signatures warn
 bun ./dist/cli.js --input example/data-gen-branded.ts
+bun ./dist/cli.js --input example/data-gen-enums.ts
 ```

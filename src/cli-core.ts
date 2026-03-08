@@ -1,6 +1,12 @@
 import fs from "node:fs";
 import path from "node:path";
-import {generateDataFile, type GenerateResult, type PropertyPolicy} from "./generator.js";
+import {pathToFileURL} from "node:url";
+import {
+  generateDataFile,
+  type FakerStrategyHook,
+  type GenerateResult,
+  type PropertyPolicy,
+} from "./generator.js";
 
 export interface CliOptions {
   input?: string;
@@ -11,6 +17,8 @@ export interface CliOptions {
   optionalProperties: PropertyPolicy["optionalProperties"];
   readonlyProperties: PropertyPolicy["readonlyProperties"];
   indexSignatures: PropertyPolicy["indexSignatures"];
+  fakerStrategyModule?: string;
+  fakerStrategy?: FakerStrategyHook;
   watch: boolean;
   deepMerge: boolean;
   include: string[];
@@ -30,6 +38,7 @@ interface WatchDeps {
     write: boolean;
     failOnWarn: boolean;
     propertyPolicy: Partial<PropertyPolicy>;
+    fakerStrategy?: FakerStrategyHook;
     deepMerge: boolean;
     include: string[];
     exclude: string[];
@@ -40,6 +49,7 @@ interface WatchDeps {
   error(message: string): void;
   setTimer(callback: () => void, delayMs: number): ReturnType<typeof setTimeout>;
   clearTimer(timer: ReturnType<typeof setTimeout>): void;
+  resolveFakerStrategy?(options: CliOptions): Promise<FakerStrategyHook | undefined>;
 }
 
 const defaultWatchDeps: WatchDeps = {
@@ -141,6 +151,16 @@ export function parseArgs(args: string[]): CliOptions {
       continue;
     }
 
+    if (arg === "--faker-strategy") {
+      const value = args[i + 1];
+      if (!value) {
+        throw new Error("Expected a module path after --faker-strategy.");
+      }
+      options.fakerStrategyModule = value;
+      i += 1;
+      continue;
+    }
+
     if (arg === "--watch" || arg === "-w") {
       options.watch = true;
       continue;
@@ -194,6 +214,8 @@ Options:
                      Include readonly properties and optionally emit warnings
       --index-signatures <ignore|warn>
                      Ignore or warn when index signatures are not materialized
+      --faker-strategy <path>
+                     Module path exporting faker strategy function (default export or named \`fakerStrategy\`)
   -w, --watch         Regenerate on file changes
       --deep-merge    Deep merge overrides instead of shallow spread
       --include       Comma-separated generator/type filters to include
@@ -240,6 +262,10 @@ export function createWatchModeRuntime(
 
   const syncWatchers = (files: string[]): void => {
     const next = new Set(files.map((file) => path.resolve(file)));
+    if (options.fakerStrategyModule) {
+      const baseCwd = options.cwd ?? process.cwd();
+      next.add(path.resolve(baseCwd, options.fakerStrategyModule));
+    }
 
     for (const existingFile of [...watchers.keys()]) {
       if (!next.has(existingFile)) {
@@ -268,6 +294,7 @@ export function createWatchModeRuntime(
 
     running = true;
     try {
+      const fakerStrategy = deps.resolveFakerStrategy ? await deps.resolveFakerStrategy(options) : options.fakerStrategy;
       const result = await deps.generate({
         input: options.input,
         cwd: options.cwd,
@@ -278,6 +305,7 @@ export function createWatchModeRuntime(
           readonlyProperties: options.readonlyProperties,
           indexSignatures: options.indexSignatures,
         },
+        fakerStrategy,
         deepMerge: options.deepMerge,
         include: options.include,
         exclude: options.exclude,
@@ -311,7 +339,12 @@ export function createWatchModeRuntime(
 }
 
 export async function runWatchMode(options: CliOptions): Promise<void> {
-  const runtime = createWatchModeRuntime(options);
+  const runtime = createWatchModeRuntime(options, {
+    ...defaultWatchDeps,
+    async resolveFakerStrategy(currentOptions) {
+      return loadFakerStrategyFromModule(currentOptions, true);
+    },
+  });
 
   process.on("SIGINT", () => {
     runtime.closeWatchers();
@@ -344,6 +377,8 @@ export async function main(args = process.argv.slice(2)): Promise<void> {
     return;
   }
 
+  const fakerStrategy = await loadFakerStrategyFromModule(options, false);
+
   const result = await generateDataFile({
     input: options.input,
     cwd: options.cwd,
@@ -354,6 +389,7 @@ export async function main(args = process.argv.slice(2)): Promise<void> {
       readonlyProperties: options.readonlyProperties,
       indexSignatures: options.indexSignatures,
     },
+    fakerStrategy,
     deepMerge: options.deepMerge,
     include: options.include,
     exclude: options.exclude,
@@ -412,4 +448,27 @@ function parseOverrideArg(raw: string | undefined): { key: string; expression: s
   }
 
   return {key, expression};
+}
+
+async function loadFakerStrategyFromModule(
+  options: CliOptions,
+  cacheBust: boolean,
+): Promise<FakerStrategyHook | undefined> {
+  if (!options.fakerStrategyModule) {
+    return options.fakerStrategy;
+  }
+
+  const baseCwd = options.cwd ?? process.cwd();
+  const modulePath = path.resolve(baseCwd, options.fakerStrategyModule);
+  const moduleUrl = pathToFileURL(modulePath).href;
+  const imported = await import(cacheBust ? `${moduleUrl}?t=${Date.now()}` : moduleUrl);
+  const candidate = (imported.default ?? imported.fakerStrategy) as unknown;
+  if (typeof candidate !== "function") {
+    throw new Error(
+      `Invalid faker strategy module: ${options.fakerStrategyModule}. ` +
+        "Expected a default export or named export `fakerStrategy` function.",
+    );
+  }
+
+  return candidate as FakerStrategyHook;
 }

@@ -24,6 +24,9 @@ Last updated: 2026-03-07
 - Pluggable faker strategy hooks:
   - API/plugin `fakerStrategy(context) => override | undefined`
   - Direct overrides still take precedence over strategy
+- CLI strategy parity:
+  - `--faker-strategy <module-path>` (default export or named `fakerStrategy`)
+  - Watch mode tracks strategy module changes
 - Object-only root generator policy (skip scalar/array roots)
 - Union handling improvements (literal unions and discriminated object unions)
 - Diagnostics:
@@ -64,8 +67,8 @@ Last updated: 2026-03-07
 
 ## Suggested Next Implementation Order
 
-1. Additional CLI/API UX polish
-2. Advanced type-mapping presets
-3. Performance tuning for very large type graphs
-4. Extended watch diagnostics and metrics
-5. Expanded generated helper typing ergonomics
+1. Advanced type-mapping presets
+2. Performance tuning for very large type graphs
+3. Extended watch diagnostics and metrics
+4. Expanded generated helper typing ergonomics
+5. Optional generator output presets

@@ -300,6 +300,14 @@ Use function values in `FakerOverrides` (and plugin/API `fakerOverrides`) for ty
 
 For pluggable logic across many fields, use API/plugin `fakerStrategy` (a callback receiving field metadata and returning an override expression).
 
+CLI also supports strategy modules:
+
+```bash
+gen-gen --input data-gen.ts --faker-strategy ./faker-strategy.ts
+```
+
+The module should export a default function (or named `fakerStrategy`) with the same strategy signature.
+
 Faker override keys are matched in this order:
 
 1. `<RootType>.<path.to.field>` (for example `Pokemon.id`)

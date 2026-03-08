@@ -516,4 +516,56 @@ import type { User } from "./types";
     expect(result.warnings).toHaveLength(0);
     expect(result.content).toContain("export function generateUser(");
   });
+
+  test("skips type generators marked with @gen-gen-ignore", async () => {
+    const cwd = await createFixture({
+      "types.ts": `
+/** @gen-gen-ignore */
+export type InternalOnly = { id: string };
+export type PublicType = { name: string };
+`,
+      "data-gen.ts": `
+import type { InternalOnly, PublicType } from "./types";
+
+/**
+ * Generated below - DO NOT EDIT
+ */
+`,
+    });
+
+    const result = await generateDataFile({cwd, write: false});
+
+    expect(result.warnings).toContain('Skipped imported type "InternalOnly": marked with @gen-gen-ignore.');
+    expect(result.content).not.toContain("export function generateInternalOnly(");
+    expect(result.content).toContain("export function generatePublicType(");
+  });
+
+  test("uses placeholder values for properties marked with @gen-gen-ignore", async () => {
+    const cwd = await createFixture({
+      "types.ts": `
+export type User = {
+  id: string;
+  /** @gen-gen-ignore */
+  profile: {
+    locale: string;
+  };
+  email: string;
+};
+`,
+      "data-gen.ts": `
+import type { User } from "./types";
+
+/**
+ * Generated below - DO NOT EDIT
+ */
+`,
+    });
+
+    const result = await generateDataFile({cwd, write: false});
+
+    expect(result.content).toContain("profile: {} as");
+    expect(result.content).toContain("email: faker.word.noun()");
+    expect(result.content).toContain("id: faker.word.noun()");
+    expect(result.content).not.toContain("locale: faker");
+  });
 });

@@ -139,6 +139,11 @@ function parseTargets(
   for (const node of concreteGenericNodes) {
     const type = checker.getTypeFromTypeNode(node);
     const typeText = node.getText(sourceFile);
+    if (isIgnoredType(type)) {
+      warnings.push(`Skipped ConcreteGenerics entry \"${typeText}\": marked with @gen-gen-ignore.`);
+      continue;
+    }
+
     if (!isGeneratableRootType(type, checker)) {
       warnings.push(`Skipped ConcreteGenerics entry \"${typeText}\": only object types are supported for generators.`);
       continue;
@@ -212,6 +217,10 @@ function collectImportedTargets(
         const resolvedSymbol = (symbol.flags & ts.SymbolFlags.Alias) !== 0 ? checker.getAliasedSymbol(symbol) : symbol;
         if (isGenericDeclaration(resolvedSymbol)) {
           warnings.push(`Skipped imported type \"${element.name.text}\": generic type requires ConcreteGenerics entry.`);
+          continue;
+        }
+        if (isIgnoredSymbol(resolvedSymbol)) {
+          warnings.push(`Skipped imported type \"${element.name.text}\": marked with @gen-gen-ignore.`);
           continue;
         }
 
@@ -562,6 +571,13 @@ function emitObjectLiteral(
 
   for (const property of properties) {
     const declaration = property.valueDeclaration ?? property.declarations?.[0] ?? context.sourceFile;
+    if (hasGenGenIgnoreTag(declaration, context.sourceFile)) {
+      const propertyName = needsQuotedProperty(property.name) ? JSON.stringify(property.name) : property.name;
+      const propertyType = checker.getTypeOfSymbolAtLocation(property, declaration);
+      lines.push(`  ${propertyName}: ${emitIgnoredExpression(propertyType, context)},`);
+      continue;
+    }
+
     const propertyType = checker.getTypeOfSymbolAtLocation(property, declaration);
     const nextPath = [...propertyPath, property.name];
     const declaredTypeText = getDeclaredTypeText(declaration, context.sourceFile);
@@ -913,6 +929,13 @@ function emitInlineObject(
 
   for (const property of properties) {
     const declaration = property.valueDeclaration ?? property.declarations?.[0] ?? context.sourceFile;
+    if (hasGenGenIgnoreTag(declaration, context.sourceFile)) {
+      const propertyName = needsQuotedProperty(property.name) ? JSON.stringify(property.name) : property.name;
+      const propertyType = checker.getTypeOfSymbolAtLocation(property, declaration);
+      lines.push(`  ${propertyName}: ${emitIgnoredExpression(propertyType, context)},`);
+      continue;
+    }
+
     const propertyType = checker.getTypeOfSymbolAtLocation(property, declaration);
     const expression = emitExpression(
       propertyType,
@@ -1012,6 +1035,49 @@ function getDeclaredTypeText(declaration: ts.Node, sourceFile: ts.SourceFile): s
   }
 
   return undefined;
+}
+
+function emitIgnoredExpression(type: ts.Type, context: GenerationContext): string {
+  const checker = context.checker;
+  const typeText = checker.typeToString(type, context.sourceFile, ts.TypeFormatFlags.NoTruncation);
+  if (
+    (type.flags & ts.TypeFlags.Object) !== 0 &&
+    !checker.isArrayType(type) &&
+    !checker.isTupleType(type) &&
+    !isDateType(type)
+  ) {
+    return `{} as ${typeText}`;
+  }
+
+  return `undefined as unknown as ${typeText}`;
+}
+
+function isIgnoredType(type: ts.Type): boolean {
+  if (type.aliasSymbol && isIgnoredSymbol(type.aliasSymbol)) {
+    return true;
+  }
+
+  const symbol = type.getSymbol();
+  if (symbol && isIgnoredSymbol(symbol)) {
+    return true;
+  }
+
+  return false;
+}
+
+function isIgnoredSymbol(symbol: ts.Symbol): boolean {
+  return (symbol.declarations ?? []).some((declaration) => hasGenGenIgnoreTag(declaration));
+}
+
+function hasGenGenIgnoreTag(node: ts.Node, sourceFile?: ts.SourceFile): boolean {
+  if (ts.getJSDocTags(node).some((tag) => tag.tagName.text === "gen-gen-ignore")) {
+    return true;
+  }
+
+  const file = sourceFile ?? node.getSourceFile();
+  const fullText = file.getFullText();
+  const leading = ts.getLeadingCommentRanges(fullText, node.getFullStart()) ?? [];
+  return leading.some((range) => fullText.slice(range.pos, range.end).includes("@gen-gen-ignore"));
 }
 
 function ensureFakerImport(source: string): string {

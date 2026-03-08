@@ -7,6 +7,7 @@
 - `data-gen-deep-merge.ts` + `deep-merge-types.ts` + `usage-deep-merge.ts`: deep-merge generation behavior.
 - `data-gen-filters.ts` + `filters-types.ts` + `usage-filters.ts`: include/exclude generator filtering.
 - `data-gen-custom-faker.ts` + `custom-faker-types.ts` + `usage-custom-faker.ts`: custom faker override expressions.
+- `data-gen-ignore.ts` + `ignore-types.ts` + `usage-ignore.ts`: `@gen-gen-ignore` for type/property control.
 
 Generate each file with:
 
@@ -16,4 +17,5 @@ bun ./dist/cli.js --input example/data-gen-unions.ts
 bun ./dist/cli.js --input example/data-gen-deep-merge.ts --deep-merge
 bun ./dist/cli.js --input example/data-gen-filters.ts --include Account,Session --exclude Session
 bun ./dist/cli.js --input example/data-gen-custom-faker.ts --faker-override email=faker.internet.email()
+bun ./dist/cli.js --input example/data-gen-ignore.ts
 ```

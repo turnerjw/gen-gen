@@ -36,7 +36,7 @@ Last updated: 2026-03-07
 
 ### Medium Priority
 
-- [ ] `@gen-gen-ignore` per-type/per-property controls
+- [x] `@gen-gen-ignore` per-type/per-property controls
   - Skip specific generators or fields inline in source file
 - [ ] Explicit optional/readonly/index-signature policy options
   - Define configurable behavior contract instead of implicit behavior
@@ -61,8 +61,8 @@ Last updated: 2026-03-07
 
 ## Suggested Next Implementation Order
 
-1. `@gen-gen-ignore` controls
-2. Policy options for optional/readonly/index signatures
-3. Branded/opaque type ergonomics
-4. Enum-specific strategy polish
-5. Output formatting pass
+1. Policy options for optional/readonly/index signatures
+2. Branded/opaque type ergonomics
+3. Enum-specific strategy polish
+4. Output formatting pass
+5. Fully pluggable faker strategy hooks API

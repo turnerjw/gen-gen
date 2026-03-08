@@ -157,7 +157,8 @@ The input file should:
 2. Optionally define `type ConcreteGenerics = [...]` to specify concrete generic instantiations.
 3. Optionally define `type IncludeGenerators = [...]` / `type ExcludeGenerators = [...]` to filter generated targets.
 4. Optionally define `const FakerOverrides = { ... }` for per-field/per-type faker expressions.
-5. Include a marker comment containing `Generated below - DO NOT EDIT`.
+5. Optionally add `@gen-gen-ignore` on types/properties to skip generation behavior.
+6. Include a marker comment containing `Generated below - DO NOT EDIT`.
 
 Example:
 
@@ -183,10 +184,28 @@ const FakerOverrides = {
   "APIResponse<Pokemon>": () => ({ data: generatePokemon(), error: undefined }),
 } as const;
 
+/** @gen-gen-ignore */
+type InternalOnly = {
+  token: string;
+};
+
+type Account = {
+  id: string;
+  /** @gen-gen-ignore */
+  profile: {
+    locale: string;
+  };
+};
+
 /**
  * Generated below - DO NOT EDIT
  */
 ```
+
+`@gen-gen-ignore` behavior:
+
+- On a type/interface/class declaration: skip generating that root generator.
+- On a property: skip faker generation for that field and emit a typed placeholder value.
 
 Filter matching accepts type text and generator names. For example:
 

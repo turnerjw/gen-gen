@@ -1,0 +1,18 @@
+<svg width="1200" height="630" viewBox="0 0 1200 630" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1200" y2="630" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F9F7F2"/>
+      <stop offset="1" stop-color="#EEF5FB"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="160" y1="100" x2="1000" y2="530" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0EA5E9" stop-opacity="0.2"/>
+      <stop offset="1" stop-color="#FACC15" stop-opacity="0.24"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <rect x="90" y="80" width="1020" height="470" rx="28" fill="#FFFFFF" stroke="#D5DEE7" stroke-width="2"/>
+  <rect x="150" y="140" width="900" height="350" rx="24" fill="url(#accent)"/>
+  <text x="180" y="250" fill="#0F273F" font-family="Arial, sans-serif" font-size="78" font-weight="700">gen-gen</text>
+  <text x="180" y="325" fill="#2E4A64" font-family="Arial, sans-serif" font-size="40" font-weight="500">Type-safe test factory generation</text>
+  <text x="180" y="390" fill="#2E4A64" font-family="Arial, sans-serif" font-size="30" font-weight="400">from TypeScript types</text>
+</svg>

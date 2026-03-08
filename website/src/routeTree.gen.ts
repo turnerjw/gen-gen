@@ -9,12 +9,18 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as PlaygroundRouteImport } from './routes/playground'
 import { Route as DocsRouteImport } from './routes/docs'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as DocsIndexRouteImport } from './routes/docs.index'
 import { Route as DocsGettingStartedRouteImport } from './routes/docs.getting-started'
 import { Route as DocsCliRouteImport } from './routes/docs.cli'
 
+const PlaygroundRoute = PlaygroundRouteImport.update({
+  id: '/playground',
+  path: '/playground',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DocsRoute = DocsRouteImport.update({
   id: '/docs',
   path: '/docs',
@@ -44,12 +50,14 @@ const DocsCliRoute = DocsCliRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/docs': typeof DocsRouteWithChildren
+  '/playground': typeof PlaygroundRoute
   '/docs/cli': typeof DocsCliRoute
   '/docs/getting-started': typeof DocsGettingStartedRoute
   '/docs/': typeof DocsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/playground': typeof PlaygroundRoute
   '/docs/cli': typeof DocsCliRoute
   '/docs/getting-started': typeof DocsGettingStartedRoute
   '/docs': typeof DocsIndexRoute
@@ -58,19 +66,27 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/docs': typeof DocsRouteWithChildren
+  '/playground': typeof PlaygroundRoute
   '/docs/cli': typeof DocsCliRoute
   '/docs/getting-started': typeof DocsGettingStartedRoute
   '/docs/': typeof DocsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/docs' | '/docs/cli' | '/docs/getting-started' | '/docs/'
+  fullPaths:
+    | '/'
+    | '/docs'
+    | '/playground'
+    | '/docs/cli'
+    | '/docs/getting-started'
+    | '/docs/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/docs/cli' | '/docs/getting-started' | '/docs'
+  to: '/' | '/playground' | '/docs/cli' | '/docs/getting-started' | '/docs'
   id:
     | '__root__'
     | '/'
     | '/docs'
+    | '/playground'
     | '/docs/cli'
     | '/docs/getting-started'
     | '/docs/'
@@ -79,10 +95,18 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   DocsRoute: typeof DocsRouteWithChildren
+  PlaygroundRoute: typeof PlaygroundRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/playground': {
+      id: '/playground'
+      path: '/playground'
+      fullPath: '/playground'
+      preLoaderRoute: typeof PlaygroundRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/docs': {
       id: '/docs'
       path: '/docs'
@@ -138,6 +162,7 @@ const DocsRouteWithChildren = DocsRoute._addFileChildren(DocsRouteChildren)
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   DocsRoute: DocsRouteWithChildren,
+  PlaygroundRoute: PlaygroundRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

@@ -24,6 +24,8 @@ Generated functions accept either:
 - `Partial<T>` overrides, or
 - a callback that receives nested generator helpers and returns `Partial<T>`.
 
+Helper callbacks include object field helpers (for example `generateProfile`) and object-array item helpers (for example `generateItemsItem`).
+
 Example:
 
 ```ts
@@ -38,6 +40,7 @@ Union handling notes:
 - Literal unions (like `"a" | "b"` or `1 | 2 | 3`) are generated via `faker.helpers.arrayElement(...)`.
 - Boolean literal unions (`true | false`) use `faker.datatype.boolean()`.
 - Object unions (including discriminated unions) generate one branch and select via `faker.helpers.arrayElement(...)`.
+- Mixed unions (for example `string | number | { ... }`) sample across all concrete members.
 - Enums are generated from declared enum member values (string and numeric), then cast to the enum type.
 
 ## Install

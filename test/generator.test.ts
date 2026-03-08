@@ -887,4 +887,68 @@ import type { Wrapper } from "./types";
     expect(result.content).toContain("items: Array.from(");
     expect(result.content).toContain("() => ({");
   });
+
+  test("supports array-item helpers for object array fields", async () => {
+    const cwd = await createFixture({
+      "types.ts": `
+export type Cart = {
+  items: {
+    sku: string;
+    quantity: number;
+  }[];
+};
+`,
+      "data-gen.ts": `
+import type { Cart } from "./types";
+
+/**
+ * Generated below - DO NOT EDIT
+ */
+`,
+    });
+
+    const result = await generateDataFile({cwd, write: true});
+    expect(result.content).toContain("generate${Capitalize<string & K>}Item");
+    expect(result.content).toContain("arrayItemHelperName");
+
+    const moduleUrl = `${pathToFileURL(path.join(cwd, "data-gen.ts")).href}?t=${Date.now()}`;
+    const generatedModule = (await import(moduleUrl)) as {
+      generateCart(
+        overrides?: (helpers: {generateItemsItem: (overrides?: {sku?: string; quantity?: number}) => {sku: string; quantity: number}}) => {
+          items?: Array<{sku: string; quantity: number}>;
+        },
+      ): {items: Array<{sku: string; quantity: number}>};
+    };
+
+    const value = generatedModule.generateCart(({generateItemsItem}) => ({
+      items: [generateItemsItem({quantity: 5})],
+    }));
+
+    expect(value.items[0]?.quantity).toBe(5);
+    expect(value.items[0]?.sku).toEqual(expect.any(String));
+  });
+
+  test("generates mixed unions by sampling across all concrete members", async () => {
+    const cwd = await createFixture({
+      "types.ts": `
+export type Mixed = {
+  value: string | number | { code: string };
+};
+`,
+      "data-gen.ts": `
+import type { Mixed } from "./types";
+
+/**
+ * Generated below - DO NOT EDIT
+ */
+`,
+    });
+
+    const result = await generateDataFile({cwd, write: false});
+
+    expect(result.content).toContain("value: faker.helpers.arrayElement([");
+    expect(result.content).toContain("faker.word.noun()");
+    expect(result.content).toContain("faker.number.int({ min: 1, max: 1000 })");
+    expect(result.content).toContain("code: faker.word.noun()");
+  });
 });

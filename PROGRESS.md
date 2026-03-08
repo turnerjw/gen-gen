@@ -35,6 +35,10 @@ Last updated: 2026-03-07
 - Extended watch diagnostics and metrics:
   - CLI `--watch-diagnostics`
   - Plugin `watchDiagnostics` run/trigger metrics
+- Expanded helper typing ergonomics:
+  - Added object-array item helpers (for example `generateItemsItem`) in callback helpers/runtime
+- Union/recursive edge-case hardening:
+  - Mixed unions now sample across all concrete members instead of defaulting to first member
 - Object-only root generator policy (skip scalar/array roots)
 - Union handling improvements (literal unions and discriminated object unions)
 - Diagnostics:
@@ -75,8 +79,8 @@ Last updated: 2026-03-07
 
 ## Suggested Next Implementation Order
 
-1. Expanded generated helper typing ergonomics
-2. Optional generator output presets
-3. Additional union/recursive edge-case hardening
-4. Strategy authoring ergonomics (helper utilities)
-5. Multi-file incremental generation optimization
+1. Optional generator output presets
+2. Strategy authoring ergonomics (helper utilities)
+3. Multi-file incremental generation optimization
+4. Additional plugin/watch scalability checks
+5. CLI/reporting polish

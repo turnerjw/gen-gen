@@ -741,12 +741,22 @@ function emitSharedHelperRuntime(deepMerge: boolean): string {
     "        : T",
     "  : never;",
     "",
+    "type __GenGenArrayItemPlainObject<T> = T extends readonly (infer U)[]",
+    "  ? __GenGenPlainObject<NonNullable<U>>",
+    "  : never;",
+    "",
     "type GenGenHelpers<T extends object> = {",
     "  [K in keyof T as __GenGenPlainObject<NonNullable<T[K]>> extends never",
     "    ? never",
     "    : `generate${Capitalize<string & K>}`]: (",
     "      overrides?: GenGenOverrides<__GenGenPlainObject<NonNullable<T[K]>>>,",
     "    ) => __GenGenPlainObject<NonNullable<T[K]>>;",
+    "} & {",
+    "  [K in keyof T as __GenGenArrayItemPlainObject<NonNullable<T[K]>> extends never",
+    "    ? never",
+    "    : `generate${Capitalize<string & K>}Item`]: (",
+    "      overrides?: GenGenOverrides<__GenGenArrayItemPlainObject<NonNullable<T[K]>>>,",
+    "    ) => __GenGenArrayItemPlainObject<NonNullable<T[K]>>;",
     "};",
     "",
     "type GenGenOverrides<T extends object> = Partial<T> | ((helpers: GenGenHelpers<T>) => Partial<T>);",
@@ -791,6 +801,14 @@ function emitSharedHelperRuntime(deepMerge: boolean): string {
     "    const helpers = {} as GenGenHelpers<T>;",
     "    for (const [key, value] of Object.entries(base as Record<string, unknown>)) {",
     "      if (!__genGenIsMergeable(value)) {",
+    "        if (Array.isArray(value)) {",
+    "          const firstMergeableItem = value.find(__genGenIsMergeable);",
+    "          if (firstMergeableItem) {",
+    "            const arrayItemHelperName = `generate${key[0]?.toUpperCase() ?? \"\"}${key.slice(1)}Item`;",
+    "            (helpers as Record<string, unknown>)[arrayItemHelperName] = __genGenCreateHelper(firstMergeableItem, helperCache);",
+    "          }",
+    "        }",
+    "",
     "        continue;",
     "      }",
     "",
@@ -996,11 +1014,10 @@ function emitExpression(
         return `faker.helpers.arrayElement([${branches.join(", ")}])`;
       }
 
-      const firstMember = concreteMembers[0];
-      if (!firstMember) {
-        return "undefined";
-      }
-      return emitExpression(firstMember, context, depth + 1, fallbackTypeText, rootTypeText, propertyPath, declaredTypeText);
+      const branches = concreteMembers.map((member) =>
+        emitExpression(member, context, depth + 1, fallbackTypeText, rootTypeText, propertyPath, declaredTypeText),
+      );
+      return `faker.helpers.arrayElement([${branches.join(", ")}])`;
     }
 
     return "undefined";

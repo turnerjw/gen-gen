@@ -19,16 +19,19 @@
   "bin": {
     "gen-gen": "./dist/cli.js"
   },
+  "workspaces": [
+    "website"
+  ],
   "files": [
     "dist"
   ],
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "web:dev": "npm --prefix website run dev",
-    "web:build": "npm --prefix website run build",
-    "web:preview": "npm --prefix website run preview",
-    "gen:example": "npm run build && bun ./dist/cli.js --input example/basic/data-gen.ts && bun ./dist/cli.js --input example/generics/data-gen-generics.ts && bun ./dist/cli.js --input example/unions/data-gen-unions.ts && bun ./dist/cli.js --input example/deep-merge/data-gen-deep-merge.ts --deep-merge && bun ./dist/cli.js --input example/filters/data-gen-filters.ts --include Account,Session --exclude Session && bun ./dist/cli.js --input example/custom-faker/data-gen-custom-faker.ts --faker-override 'email=faker.internet.email()' && bun ./dist/cli.js --input example/ignore/data-gen-ignore.ts && bun ./dist/cli.js --input example/policy/data-gen-policy.ts --optional-properties omit --readonly-properties warn --index-signatures warn && bun ./dist/cli.js --input example/branded/data-gen-branded.ts && bun ./dist/cli.js --input example/enums/data-gen-enums.ts",
+    "web:dev": "bun run --filter gen-gen-website dev",
+    "web:build": "bun run --filter gen-gen-website build",
+    "web:preview": "bun run --filter gen-gen-website preview",
+    "gen:example": "bun run build && bun ./dist/cli.js --input example/basic/data-gen.ts && bun ./dist/cli.js --input example/generics/data-gen-generics.ts && bun ./dist/cli.js --input example/unions/data-gen-unions.ts && bun ./dist/cli.js --input example/deep-merge/data-gen-deep-merge.ts --deep-merge && bun ./dist/cli.js --input example/filters/data-gen-filters.ts --include Account,Session --exclude Session && bun ./dist/cli.js --input example/custom-faker/data-gen-custom-faker.ts --faker-override 'email=faker.internet.email()' && bun ./dist/cli.js --input example/ignore/data-gen-ignore.ts && bun ./dist/cli.js --input example/policy/data-gen-policy.ts --optional-properties omit --readonly-properties warn --index-signatures warn && bun ./dist/cli.js --input example/branded/data-gen-branded.ts && bun ./dist/cli.js --input example/enums/data-gen-enums.ts",
     "test": "bun test"
   },
   "devDependencies": {

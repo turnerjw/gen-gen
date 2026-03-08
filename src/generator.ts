@@ -10,6 +10,7 @@ export interface GenerateOptions {
   failOnWarn?: boolean;
   propertyPolicy?: Partial<PropertyPolicy>;
   deepMerge?: boolean;
+  typeMappingPresets?: TypeMappingPresetName[];
   include?: string[];
   exclude?: string[];
   fakerOverrides?: Record<string, FakerOverrideInput>;
@@ -34,6 +35,8 @@ export interface FakerStrategyContext {
   aliasTypeText?: string;
   declaredTypeText?: string;
 }
+
+export type TypeMappingPresetName = "common" | "commerce";
 
 export interface GenerateResult {
   inputPath: string;
@@ -69,6 +72,7 @@ interface GenerationContext {
   maxDepth: number;
   fakerOverrides: Map<string, FakerOverrideSpec>;
   fakerStrategy?: FakerStrategyHook;
+  typeMappingPresets: TypeMappingPresetName[];
   usedFakerOverrideKeys: Set<string>;
   policy: PropertyPolicy;
   emittedWarnings: Set<string>;
@@ -101,6 +105,7 @@ export async function generateDataFile(options: GenerateOptions = {}): Promise<G
     options.deepMerge ?? false,
     parsed.fakerOverrides,
     options.fakerStrategy,
+    options.typeMappingPresets ?? [],
     resolvePropertyPolicy(options.propertyPolicy),
   );
   const warnings = [
@@ -608,6 +613,7 @@ function emitFunctions(
   deepMerge: boolean,
   fakerOverrides: Map<string, FakerOverrideSpec>,
   fakerStrategy: FakerStrategyHook | undefined,
+  typeMappingPresets: TypeMappingPresetName[],
   policy: PropertyPolicy,
 ): {
   content: string;
@@ -629,6 +635,7 @@ function emitFunctions(
     maxDepth: 8,
     fakerOverrides,
     fakerStrategy,
+    typeMappingPresets,
     usedFakerOverrideKeys: new Set<string>(),
     policy,
     emittedWarnings: new Set<string>(),
@@ -843,6 +850,23 @@ function emitExpression(
       return `(${strategyOverride.expression})()`;
     }
     return strategyOverride.expression;
+  }
+
+  const presetOverride = resolvePresetStrategy(context, {
+    rootTypeText,
+    propertyPath,
+    typeText: normalizedTypeText,
+    aliasTypeText: type.aliasSymbol?.getName(),
+    declaredTypeText,
+  });
+  if (presetOverride) {
+    if (presetOverride.invokeMode === "callWithFaker") {
+      return `(${presetOverride.expression})(faker)`;
+    }
+    if (presetOverride.invokeMode === "call") {
+      return `(${presetOverride.expression})()`;
+    }
+    return presetOverride.expression;
   }
 
   const brandedPrimitiveKind = getBrandedPrimitiveKind(type);
@@ -1318,6 +1342,119 @@ function resolveFakerStrategy(
   }
 
   return toFakerOverrideSpecFromStrategy(result);
+}
+
+function resolvePresetStrategy(
+  context: GenerationContext,
+  value: {
+    rootTypeText: string;
+    propertyPath: string[];
+    typeText: string;
+    aliasTypeText?: string;
+    declaredTypeText?: string;
+  },
+): FakerOverrideSpec | undefined {
+  if (context.typeMappingPresets.length === 0) {
+    return undefined;
+  }
+
+  const strategyContext: FakerStrategyContext = {
+    rootTypeText: value.rootTypeText,
+    propertyPath: value.propertyPath,
+    propertyName: value.propertyPath[value.propertyPath.length - 1],
+    path: value.propertyPath.join("."),
+    typeText: value.typeText,
+    aliasTypeText: value.aliasTypeText,
+    declaredTypeText: value.declaredTypeText,
+  };
+
+  for (const presetName of context.typeMappingPresets) {
+    const result = applyPresetStrategy(presetName, strategyContext);
+    if (result) {
+      return toFakerOverrideSpecFromStrategy(result);
+    }
+  }
+
+  return undefined;
+}
+
+function applyPresetStrategy(
+  presetName: TypeMappingPresetName,
+  context: FakerStrategyContext,
+): FakerStrategyResult | undefined {
+  if (presetName === "common") {
+    return commonPresetStrategy(context);
+  }
+  if (presetName === "commerce") {
+    return commercePresetStrategy(context);
+  }
+  return undefined;
+}
+
+function commonPresetStrategy(context: FakerStrategyContext): FakerStrategyResult | undefined {
+  const property = (context.propertyName ?? "").toLowerCase();
+  const normalizedType = context.typeText.replace(/\s+/g, "").toLowerCase();
+
+  if (property === "email") {
+    return "faker.internet.email()";
+  }
+  if (property === "url" || property === "uri" || property === "website" || property === "homepage") {
+    return "faker.internet.url()";
+  }
+  if (property === "phone" || property === "phonenumber") {
+    return "faker.phone.number()";
+  }
+  if (property === "firstname") {
+    return "faker.person.firstName()";
+  }
+  if (property === "lastname") {
+    return "faker.person.lastName()";
+  }
+  if (property === "fullname") {
+    return "faker.person.fullName()";
+  }
+  if (property === "username" || property === "handle") {
+    return "faker.internet.username()";
+  }
+  if (property === "id" && normalizedType === "string") {
+    return "faker.string.uuid()";
+  }
+  if ((property === "createdat" || property === "updatedat") && normalizedType === "string") {
+    return "faker.date.recent().toISOString()";
+  }
+  if ((property === "createdat" || property === "updatedat") && normalizedType === "date") {
+    return "faker.date.recent()";
+  }
+
+  return undefined;
+}
+
+function commercePresetStrategy(context: FakerStrategyContext): FakerStrategyResult | undefined {
+  const property = (context.propertyName ?? "").toLowerCase();
+  const normalizedType = context.typeText.replace(/\s+/g, "").toLowerCase();
+
+  if (property === "currency" || property === "currencycode") {
+    return "faker.finance.currencyCode()";
+  }
+
+  const amountLike =
+    property === "amount" ||
+    property === "price" ||
+    property === "total" ||
+    property === "subtotal" ||
+    property === "tax";
+  if (!amountLike) {
+    return undefined;
+  }
+
+  if (normalizedType === "number") {
+    return "faker.number.float({ min: 1, max: 1000, fractionDigits: 2 })";
+  }
+  if (normalizedType === "string") {
+    return "faker.commerce.price()";
+  }
+
+  return undefined;
 }
 
 function toFakerOverrideSpecFromStrategy(result: FakerStrategyResult): FakerOverrideSpec {

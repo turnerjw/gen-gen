@@ -5,6 +5,7 @@ import {
   type FakerStrategyHook,
   type GenerateResult,
   type PropertyPolicy,
+  type TypeMappingPresetName,
 } from "./generator.js";
 
 export interface GenGenPluginOptions {
@@ -13,6 +14,7 @@ export interface GenGenPluginOptions {
   failOnWarn?: boolean;
   propertyPolicy?: Partial<PropertyPolicy>;
   deepMerge?: boolean;
+  typeMappingPresets?: TypeMappingPresetName[];
   include?: string[];
   exclude?: string[];
   fakerOverrides?: Record<string, FakerOverrideInput>;
@@ -41,6 +43,7 @@ interface PluginDeps {
     failOnWarn?: boolean;
     propertyPolicy?: Partial<PropertyPolicy>;
     deepMerge?: boolean;
+    typeMappingPresets?: TypeMappingPresetName[];
     include?: string[];
     exclude?: string[];
     fakerOverrides?: Record<string, FakerOverrideInput>;
@@ -75,6 +78,7 @@ export function createGenGenPlugin(options: GenGenPluginOptions = {}, deps: Plug
       failOnWarn: options.failOnWarn,
       propertyPolicy: options.propertyPolicy,
       deepMerge: options.deepMerge,
+      typeMappingPresets: options.typeMappingPresets,
       include: options.include,
       exclude: options.exclude,
       fakerOverrides: options.fakerOverrides,

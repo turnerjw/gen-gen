@@ -29,6 +29,7 @@ describe("vite plugin", () => {
           readonlyProperties: "warn",
           indexSignatures: "warn",
         },
+        typeMappingPresets: ["common"],
         include: ["User"],
         fakerStrategy: () => "faker.string.uuid()",
       },
@@ -62,6 +63,7 @@ describe("vite plugin", () => {
       readonlyProperties: "warn",
       indexSignatures: "warn",
     });
+    expect(generatedOptions[0]?.typeMappingPresets).toEqual(["common"]);
     expect(generatedOptions[0]?.include).toEqual(["User"]);
     expect(typeof generatedOptions[0]?.fakerStrategy).toBe("function");
   });

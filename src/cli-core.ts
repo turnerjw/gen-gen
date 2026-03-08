@@ -6,6 +6,7 @@ import {
   type FakerStrategyHook,
   type GenerateResult,
   type PropertyPolicy,
+  type TypeMappingPresetName,
 } from "./generator.js";
 
 export interface CliOptions {
@@ -19,6 +20,7 @@ export interface CliOptions {
   indexSignatures: PropertyPolicy["indexSignatures"];
   fakerStrategyModule?: string;
   fakerStrategy?: FakerStrategyHook;
+  typeMappingPresets: TypeMappingPresetName[];
   watch: boolean;
   deepMerge: boolean;
   include: string[];
@@ -39,6 +41,7 @@ interface WatchDeps {
     failOnWarn: boolean;
     propertyPolicy: Partial<PropertyPolicy>;
     fakerStrategy?: FakerStrategyHook;
+    typeMappingPresets: TypeMappingPresetName[];
     deepMerge: boolean;
     include: string[];
     exclude: string[];
@@ -84,6 +87,7 @@ export function parseArgs(args: string[]): CliOptions {
     optionalProperties: "include",
     readonlyProperties: "include",
     indexSignatures: "ignore",
+    typeMappingPresets: [],
     watch: false,
     deepMerge: false,
     include: [],
@@ -161,6 +165,17 @@ export function parseArgs(args: string[]): CliOptions {
       continue;
     }
 
+    if (arg === "--preset") {
+      const raw = args[i + 1];
+      if (!raw) {
+        throw new Error("Expected one or more preset names after --preset.");
+      }
+      const parsed = parsePresetArg(raw);
+      options.typeMappingPresets.push(...parsed);
+      i += 1;
+      continue;
+    }
+
     if (arg === "--watch" || arg === "-w") {
       options.watch = true;
       continue;
@@ -216,6 +231,8 @@ Options:
                      Ignore or warn when index signatures are not materialized
       --faker-strategy <path>
                      Module path exporting faker strategy function (default export or named \`fakerStrategy\`)
+      --preset <name[,name...]>
+                     Type-mapping preset(s): common, commerce
   -w, --watch         Regenerate on file changes
       --deep-merge    Deep merge overrides instead of shallow spread
       --include       Comma-separated generator/type filters to include
@@ -306,6 +323,7 @@ export function createWatchModeRuntime(
           indexSignatures: options.indexSignatures,
         },
         fakerStrategy,
+        typeMappingPresets: options.typeMappingPresets,
         deepMerge: options.deepMerge,
         include: options.include,
         exclude: options.exclude,
@@ -390,6 +408,7 @@ export async function main(args = process.argv.slice(2)): Promise<void> {
       indexSignatures: options.indexSignatures,
     },
     fakerStrategy,
+    typeMappingPresets: options.typeMappingPresets,
     deepMerge: options.deepMerge,
     include: options.include,
     exclude: options.exclude,
@@ -448,6 +467,24 @@ function parseOverrideArg(raw: string | undefined): { key: string; expression: s
   }
 
   return {key, expression};
+}
+
+function parsePresetArg(raw: string): TypeMappingPresetName[] {
+  const values = raw
+    .split(",")
+    .map((value) => value.trim())
+    .filter((value) => value.length > 0);
+  if (values.length === 0) {
+    throw new Error("Expected one or more preset names after --preset.");
+  }
+
+  const allowed = new Set<TypeMappingPresetName>(["common", "commerce"]);
+  const invalid = values.filter((value): value is string => !allowed.has(value as TypeMappingPresetName));
+  if (invalid.length > 0) {
+    throw new Error(`Unknown preset(s): ${invalid.join(", ")}. Allowed presets: common, commerce.`);
+  }
+
+  return [...new Set(values)] as TypeMappingPresetName[];
 }
 
 async function loadFakerStrategyFromModule(

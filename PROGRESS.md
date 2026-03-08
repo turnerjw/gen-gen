@@ -27,6 +27,9 @@ Last updated: 2026-03-07
 - CLI strategy parity:
   - `--faker-strategy <module-path>` (default export or named `fakerStrategy`)
   - Watch mode tracks strategy module changes
+- Type-mapping presets:
+  - `common` and `commerce` presets via API/plugin/CLI
+  - Precedence: `FakerOverrides` > `fakerStrategy` > preset > defaults
 - Object-only root generator policy (skip scalar/array roots)
 - Union handling improvements (literal unions and discriminated object unions)
 - Diagnostics:
@@ -67,8 +70,8 @@ Last updated: 2026-03-07
 
 ## Suggested Next Implementation Order
 
-1. Advanced type-mapping presets
-2. Performance tuning for very large type graphs
-3. Extended watch diagnostics and metrics
-4. Expanded generated helper typing ergonomics
-5. Optional generator output presets
+1. Performance tuning for very large type graphs
+2. Extended watch diagnostics and metrics
+3. Expanded generated helper typing ergonomics
+4. Optional generator output presets
+5. Additional union/recursive edge-case hardening

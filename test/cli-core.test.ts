@@ -12,4 +12,13 @@ describe("cli-core parseArgs", () => {
   test("throws when --faker-strategy path is missing", () => {
     expect(() => parseArgs(["--faker-strategy"])).toThrow("Expected a module path after --faker-strategy.");
   });
+
+  test("parses --preset values", () => {
+    const options = parseArgs(["--preset", "common,commerce", "--preset", "common"]);
+    expect(options.typeMappingPresets).toEqual(["common", "commerce", "common"]);
+  });
+
+  test("throws for unknown preset names", () => {
+    expect(() => parseArgs(["--preset", "unknown"])).toThrow("Unknown preset(s): unknown. Allowed presets: common, commerce.");
+  });
 });

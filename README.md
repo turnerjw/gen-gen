@@ -62,6 +62,7 @@ Options:
 - `--optional-properties <include|omit>`: include or omit optional properties in generated base objects
 - `--readonly-properties <include|warn>`: include readonly properties and optionally emit warnings
 - `--index-signatures <ignore|warn>`: ignore or warn when index signatures are not materialized
+- `--preset <name[,name...]>`: enable type-mapping presets (`common`, `commerce`)
 - `-w, --watch`: run continuously and regenerate on changes
 - `--deep-merge`: merge overrides deeply instead of shallow spread
 - `--include`: comma-separated filters to include specific generators/types
@@ -307,6 +308,14 @@ gen-gen --input data-gen.ts --faker-strategy ./faker-strategy.ts
 ```
 
 The module should export a default function (or named `fakerStrategy`) with the same strategy signature.
+
+Preset example:
+
+```bash
+gen-gen --input data-gen.ts --preset common,commerce
+```
+
+Preset + strategy can be combined. Strategy still wins over preset matches, and direct `FakerOverrides` win over both.
 
 Faker override keys are matched in this order:
 

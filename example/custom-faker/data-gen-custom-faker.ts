@@ -99,9 +99,9 @@ export type GenerateCustomFakerExampleCallbackParam = (helpers: GenGenHelpers<Cu
 
 export function generateCustomFakerExample(overrides?: Partial<CustomFakerExample> | GenerateCustomFakerExampleCallbackParam): CustomFakerExample {
   const base: CustomFakerExample = {
-    id: (() => faker.string.uuid())(),
+    id: faker.string.uuid(),
     email: faker.internet.email(),
-    createdAt: (() => faker.date.recent().toISOString())(),
+    createdAt: faker.date.recent().toISOString(),
   };
   const generate = __genGenCreateHelper(base);
   return generate(overrides);

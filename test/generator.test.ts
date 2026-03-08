@@ -400,9 +400,9 @@ const FakerOverrides = {
     const result = await generateDataFile({cwd, write: false});
 
     expect(result.warnings).toContain('Skipped imported type "UserId": only object types are supported for generators.');
-    expect(result.content).toContain("id: (() => faker.string.uuid())()");
-    expect(result.content).toContain("email: (() => faker.internet.email())()");
-    expect(result.content).toContain("locale: (() => faker.helpers.arrayElement([\"en-CA\", \"fr-CA\"]))()");
+    expect(result.content).toContain("id: faker.string.uuid()");
+    expect(result.content).toContain("email: faker.internet.email()");
+    expect(result.content).toContain("locale: faker.helpers.arrayElement([\"en-CA\", \"fr-CA\"])");
     expect(result.content).toContain("export function generateUser(");
     expect(result.content).not.toContain("export function generateUserId(");
   });

@@ -339,16 +339,19 @@ function collectFakerOverrides(sourceFile: ts.SourceFile, warnings: string[]): R
         }
 
         const initializer = property.initializer;
-        const isFunctionOverride = ts.isArrowFunction(initializer) || ts.isFunctionExpression(initializer);
-        const invokeMode = isFunctionOverride
-          ? initializer.parameters.length > 0
-            ? "callWithFaker"
-            : "call"
-          : "raw";
+        const functionSpec = extractFunctionOverrideSpec(initializer, sourceFile);
+        if (functionSpec) {
+          overrides[key] = {
+            sourceKey: key,
+            ...functionSpec,
+          };
+          continue;
+        }
+
         overrides[key] = {
           sourceKey: key,
           expression: initializer.getText(sourceFile),
-          invokeMode,
+          invokeMode: "raw",
         };
       }
     }
@@ -391,6 +394,55 @@ function toFakerOverrideSpec(input: FakerOverrideInput, sourceKey = ""): FakerOv
     expression: input,
     invokeMode: "raw",
   };
+}
+
+function extractFunctionOverrideSpec(
+  expression: ts.Expression,
+  sourceFile: ts.SourceFile,
+): Pick<FakerOverrideSpec, "expression" | "invokeMode"> | null {
+  if (ts.isArrowFunction(expression)) {
+    if (expression.parameters.length === 0) {
+      if (ts.isParenthesizedExpression(expression.body)) {
+        return {
+          expression: expression.body.expression.getText(sourceFile),
+          invokeMode: "raw",
+        };
+      }
+      if (ts.isExpression(expression.body)) {
+        return {
+          expression: expression.body.getText(sourceFile),
+          invokeMode: "raw",
+        };
+      }
+    }
+
+    return {
+      expression: expression.getText(sourceFile),
+      invokeMode: expression.parameters.length > 0 ? "callWithFaker" : "call",
+    };
+  }
+
+  if (ts.isFunctionExpression(expression)) {
+    if (expression.parameters.length === 0 && expression.body.statements.length === 1) {
+      const firstStatement = expression.body.statements[0];
+      if (!firstStatement) {
+        return null;
+      }
+      if (ts.isReturnStatement(firstStatement) && firstStatement.expression) {
+        return {
+          expression: firstStatement.expression.getText(sourceFile),
+          invokeMode: "raw",
+        };
+      }
+    }
+
+    return {
+      expression: expression.getText(sourceFile),
+      invokeMode: expression.parameters.length > 0 ? "callWithFaker" : "call",
+    };
+  }
+
+  return null;
 }
 
 function mergeFilters(...groups: string[][]): string[] {

@@ -93,8 +93,8 @@ export type GenerateTicketCallbackParam = (helpers: GenGenHelpers<Ticket>) => Pa
 
 export function generateTicket(overrides?: Partial<Ticket> | GenerateTicketCallbackParam): Ticket {
   const base: Ticket = {
-    status: faker.helpers.arrayElement(["draft", "active", "closed"]) as import("/Users/justinturner/Developer/gen-gen/example/enum-types").Status,
-    priority: faker.helpers.arrayElement([1, 2, 10]) as import("/Users/justinturner/Developer/gen-gen/example/enum-types").Priority,
+    status: faker.helpers.arrayElement(["draft", "active", "closed"]) as import("/Users/justinturner/Developer/gen-gen/example/enums/enum-types").Status,
+    priority: faker.helpers.arrayElement([1, 2, 10]) as import("/Users/justinturner/Developer/gen-gen/example/enums/enum-types").Priority,
     title: faker.word.noun(),
   };
   const generate = __genGenCreateHelper(base);

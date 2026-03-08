@@ -1,13 +1,10 @@
-import type {APIResponse, Paginated, Pokemon} from "./generics-types";
+import type {CheckoutDraft} from "./types";
 import {faker} from "@faker-js/faker";
 
 /**
  * Add concrete generics here to generate functions for them
  */
-type ConcreteGenerics = [
-  APIResponse<Pokemon>,
-  Paginated<Pokemon>,
-];
+type ConcreteGenerics = [];
 
 /**
  * Generated below - DO NOT EDIT
@@ -92,35 +89,26 @@ function __genGenCreateHelper<T extends object>(
   return generate;
 }
 
-export type GeneratePokemonCallbackParam = (helpers: GenGenHelpers<Pokemon>) => Partial<Pokemon>;
+export type GenerateCheckoutDraftCallbackParam = (helpers: GenGenHelpers<CheckoutDraft>) => Partial<CheckoutDraft>;
 
-export function generatePokemon(overrides?: Partial<Pokemon> | GeneratePokemonCallbackParam): Pokemon {
-  const base: Pokemon = {
-    id: faker.number.int({ min: 1, max: 1000 }),
-    name: faker.word.noun(),
-    type: faker.word.noun(),
-  };
-  const generate = __genGenCreateHelper(base);
-  return generate(overrides);
-}
-
-export type GeneratePokemonAPIResponseCallbackParam = (helpers: GenGenHelpers<APIResponse<Pokemon>>) => Partial<APIResponse<Pokemon>>;
-
-export function generatePokemonAPIResponse(overrides?: Partial<APIResponse<Pokemon>> | GeneratePokemonAPIResponseCallbackParam): APIResponse<Pokemon> {
-  const base: APIResponse<Pokemon> = {
-    data: generatePokemon(),
-    error: faker.datatype.boolean() ? faker.word.noun() : undefined,
-  };
-  const generate = __genGenCreateHelper(base);
-  return generate(overrides);
-}
-
-export type GeneratePokemonPaginatedCallbackParam = (helpers: GenGenHelpers<Paginated<Pokemon>>) => Partial<Paginated<Pokemon>>;
-
-export function generatePokemonPaginated(overrides?: Partial<Paginated<Pokemon>> | GeneratePokemonPaginatedCallbackParam): Paginated<Pokemon> {
-  const base: Paginated<Pokemon> = {
-    items: Array.from({ length: faker.number.int({ min: 1, max: 3 }) }, () => generatePokemon()),
-    nextPage: faker.datatype.boolean() ? faker.number.int({ min: 1, max: 1000 }) : undefined,
+export function generateCheckoutDraft(overrides?: Partial<CheckoutDraft> | GenerateCheckoutDraftCallbackParam): CheckoutDraft {
+  const base: CheckoutDraft = {
+    orderId: faker.word.noun(),
+    profile: {
+      fullName: faker.word.noun(),
+      email: faker.word.noun(),
+      marketingOptIn: faker.datatype.boolean(),
+    },
+    shipping: {
+      address: {
+        line1: faker.word.noun(),
+        city: faker.word.noun(),
+        countryCode: faker.word.noun(),
+        postalCode: faker.word.noun(),
+      },
+      instructions: faker.word.noun(),
+    },
+    tags: Array.from({ length: faker.number.int({ min: 1, max: 3 }) }, () => faker.word.noun()),
   };
   const generate = __genGenCreateHelper(base);
   return generate(overrides);

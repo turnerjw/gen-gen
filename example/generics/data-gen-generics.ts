@@ -1,12 +1,13 @@
-import type {UnnamedNestedExample} from "./types";
-
+import type {ApiEnvelope, Connection, UserSummary} from "./generics-types";
 import {faker} from "@faker-js/faker";
 
 /**
  * Add concrete generics here to generate functions for them
  */
 type ConcreteGenerics = [
-]
+  ApiEnvelope<UserSummary>,
+  Connection<UserSummary>,
+];
 
 /**
  * Generated below - DO NOT EDIT
@@ -91,19 +92,39 @@ function __genGenCreateHelper<T extends object>(
   return generate;
 }
 
-export type GenerateUnnamedNestedExampleCallbackParam = (helpers: GenGenHelpers<UnnamedNestedExample>) => Partial<UnnamedNestedExample>;
+export type GenerateUserSummaryCallbackParam = (helpers: GenGenHelpers<UserSummary>) => Partial<UserSummary>;
 
-export function generateUnnamedNestedExample(overrides?: Partial<UnnamedNestedExample> | GenerateUnnamedNestedExampleCallbackParam): UnnamedNestedExample {
-  const base: UnnamedNestedExample = {
-    a: faker.word.noun(),
-    b: {
-      c: faker.number.int({ min: 1, max: 1000 }),
-      d: faker.datatype.boolean(),
-      e: {
-        f: faker.word.noun(),
-        g: faker.number.int({ min: 1, max: 1000 }),
-      },
-    },
+export function generateUserSummary(overrides?: Partial<UserSummary> | GenerateUserSummaryCallbackParam): UserSummary {
+  const base: UserSummary = {
+    id: faker.word.noun(),
+    handle: faker.word.noun(),
+    role: faker.helpers.arrayElement(["admin", "member"]),
+  };
+  const generate = __genGenCreateHelper(base);
+  return generate(overrides);
+}
+
+export type GenerateUserSummaryApiEnvelopeCallbackParam = (helpers: GenGenHelpers<ApiEnvelope<UserSummary>>) => Partial<ApiEnvelope<UserSummary>>;
+
+export function generateUserSummaryApiEnvelope(overrides?: Partial<ApiEnvelope<UserSummary>> | GenerateUserSummaryApiEnvelopeCallbackParam): ApiEnvelope<UserSummary> {
+  const base: ApiEnvelope<UserSummary> = {
+    data: generateUserSummary(),
+    requestId: faker.word.noun(),
+    error: faker.datatype.boolean() ? faker.word.noun() : undefined,
+  };
+  const generate = __genGenCreateHelper(base);
+  return generate(overrides);
+}
+
+export type GenerateUserSummaryConnectionCallbackParam = (helpers: GenGenHelpers<Connection<UserSummary>>) => Partial<Connection<UserSummary>>;
+
+export function generateUserSummaryConnection(overrides?: Partial<Connection<UserSummary>> | GenerateUserSummaryConnectionCallbackParam): Connection<UserSummary> {
+  const base: Connection<UserSummary> = {
+    edges: Array.from({ length: faker.number.int({ min: 1, max: 3 }) }, () => ({
+      node: generateUserSummary(),
+      cursor: faker.word.noun(),
+    })),
+    hasNextPage: faker.datatype.boolean(),
   };
   const generate = __genGenCreateHelper(base);
   return generate(overrides);

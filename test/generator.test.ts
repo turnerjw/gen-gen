@@ -723,4 +723,29 @@ import type { Deep } from "./types";
     expect(result.content).toContain("      e: {");
     expect(result.content).toContain("        f: faker.word.noun()");
   });
+
+  test("wraps inline object array item expressions in parentheses", async () => {
+    const cwd = await createFixture({
+      "types.ts": `
+export type Wrapper = {
+  items: {
+    id: string;
+    score: number;
+  }[];
+};
+`,
+      "data-gen.ts": `
+import type { Wrapper } from "./types";
+
+/**
+ * Generated below - DO NOT EDIT
+ */
+`,
+    });
+
+    const result = await generateDataFile({cwd, write: false});
+
+    expect(result.content).toContain("items: Array.from(");
+    expect(result.content).toContain("() => ({");
+  });
 });

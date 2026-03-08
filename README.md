@@ -49,7 +49,7 @@ npm install -D gen-gen typescript @faker-js/faker
 ## CLI
 
 ```bash
-gen-gen --input example/data-gen.ts
+gen-gen --input example/basic/data-gen.ts
 ```
 
 Options:

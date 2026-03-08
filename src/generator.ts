@@ -912,8 +912,9 @@ function emitExpression(
           declaredTypeText,
         )
       : "faker.word.noun()";
+    const normalizedItemExpression = isInlineObjectExpression(itemExpression) ? `(${itemExpression})` : itemExpression;
 
-    return `Array.from({ length: faker.number.int({ min: 1, max: 3 }) }, () => ${itemExpression})`;
+    return `Array.from({ length: faker.number.int({ min: 1, max: 3 }) }, () => ${normalizedItemExpression})`;
   }
 
   const typeText = normalizedTypeText;
@@ -963,6 +964,11 @@ function emitPrimitiveExpression(kind: "string" | "number" | "boolean" | "bigint
     return "faker.datatype.boolean()";
   }
   return "BigInt(faker.number.int({ min: 1, max: 1000 }))";
+}
+
+function isInlineObjectExpression(expression: string): boolean {
+  const trimmed = expression.trim();
+  return trimmed.startsWith("{") && trimmed.endsWith("}");
 }
 
 function getBrandedPrimitiveKind(type: ts.Type): "string" | "number" | "boolean" | "bigint" | null {

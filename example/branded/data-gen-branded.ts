@@ -93,8 +93,8 @@ export type GenerateInvoiceCallbackParam = (helpers: GenGenHelpers<Invoice>) => 
 
 export function generateInvoice(overrides?: Partial<Invoice> | GenerateInvoiceCallbackParam): Invoice {
   const base: Invoice = {
-    id: faker.word.noun() as import("/Users/justinturner/Developer/gen-gen/example/branded-types").UserId,
-    total: faker.number.int({ min: 1, max: 1000 }) as import("/Users/justinturner/Developer/gen-gen/example/branded-types").AmountCents,
+    id: faker.word.noun() as import("/Users/justinturner/Developer/gen-gen/example/branded/branded-types").UserId,
+    total: faker.number.int({ min: 1, max: 1000 }) as import("/Users/justinturner/Developer/gen-gen/example/branded/branded-types").AmountCents,
     note: faker.datatype.boolean() ? faker.word.noun() : undefined,
   };
   const generate = __genGenCreateHelper(base);

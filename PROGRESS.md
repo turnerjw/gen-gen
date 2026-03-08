@@ -30,6 +30,8 @@ Last updated: 2026-03-07
 - Type-mapping presets:
   - `common` and `commerce` presets via API/plugin/CLI
   - Precedence: `FakerOverrides` > `fakerStrategy` > preset > defaults
+- Performance tuning for large type graphs:
+  - Cached `typeToString`, `getPropertiesOfType`, and enum value extraction during a generation run
 - Object-only root generator policy (skip scalar/array roots)
 - Union handling improvements (literal unions and discriminated object unions)
 - Diagnostics:
@@ -70,8 +72,8 @@ Last updated: 2026-03-07
 
 ## Suggested Next Implementation Order
 
-1. Performance tuning for very large type graphs
-2. Extended watch diagnostics and metrics
-3. Expanded generated helper typing ergonomics
-4. Optional generator output presets
-5. Additional union/recursive edge-case hardening
+1. Extended watch diagnostics and metrics
+2. Expanded generated helper typing ergonomics
+3. Optional generator output presets
+4. Additional union/recursive edge-case hardening
+5. Strategy authoring ergonomics (helper utilities)

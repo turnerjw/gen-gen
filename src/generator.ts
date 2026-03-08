@@ -76,6 +76,9 @@ interface GenerationContext {
   usedFakerOverrideKeys: Set<string>;
   policy: PropertyPolicy;
   emittedWarnings: Set<string>;
+  typeTextCache: WeakMap<ts.Type, string>;
+  propertiesCache: WeakMap<ts.Type, ts.Symbol[]>;
+  enumValuesCache: WeakMap<ts.Type, string[] | null>;
 }
 
 const DEFAULT_INPUT = "data-gen.ts";
@@ -639,6 +642,9 @@ function emitFunctions(
     usedFakerOverrideKeys: new Set<string>(),
     policy,
     emittedWarnings: new Set<string>(),
+    typeTextCache: new WeakMap(),
+    propertiesCache: new WeakMap(),
+    enumValuesCache: new WeakMap(),
   };
 
   const sections: string[] = [emitSharedHelperRuntime(deepMerge)];
@@ -676,7 +682,7 @@ function emitObjectLiteral(
 ): string {
   const checker = context.checker;
   maybeWarnOnIndexSignature(type, context, rootTypeText, propertyPath);
-  const properties = checker.getPropertiesOfType(type);
+  const properties = getPropertiesOfTypeCached(type, context);
 
   const lines: string[] = ["{"];
 
@@ -816,7 +822,7 @@ function emitExpression(
   declaredTypeText?: string,
 ): string {
   const checker = context.checker;
-  const normalizedTypeText = checker.typeToString(type, context.sourceFile, ts.TypeFormatFlags.NoTruncation);
+  const normalizedTypeText = getTypeText(type, context);
 
   const override = resolveFakerOverride(context, {
     rootTypeText,
@@ -892,7 +898,7 @@ function emitExpression(
   }
 
   if (type.flags & ts.TypeFlags.BooleanLiteral) {
-    return checker.typeToString(type, context.sourceFile, ts.TypeFormatFlags.NoTruncation) === "true" ? "true" : "false";
+    return getTypeText(type, context) === "true" ? "true" : "false";
   }
 
   if (type.flags & ts.TypeFlags.String) {
@@ -974,7 +980,7 @@ function emitExpression(
 
       if (areAllBooleanLiterals(concreteMembers)) {
         const values = concreteMembers.map((member) =>
-          checker.typeToString(member, context.sourceFile, ts.TypeFormatFlags.NoTruncation) === "true" ? "true" : "false",
+          getTypeText(member, context) === "true" ? "true" : "false",
         );
         const unique = [...new Set(values)];
         if (unique.length === 1) {
@@ -1021,7 +1027,7 @@ function emitExpression(
           itemType,
           context,
           depth + 1,
-          checker.typeToString(itemType, context.sourceFile, ts.TypeFormatFlags.NoTruncation),
+          getTypeText(itemType, context),
           rootTypeText,
           propertyPath,
           declaredTypeText,
@@ -1133,8 +1139,14 @@ function getPrimitiveKind(type: ts.Type): "string" | "number" | "boolean" | "big
 }
 
 function getEnumLiteralExpressions(type: ts.Type, context: GenerationContext): string[] {
+  const cached = context.enumValuesCache.get(type);
+  if (cached !== undefined) {
+    return cached ?? [];
+  }
+
   const declaration = getEnumDeclaration(type);
   if (!declaration) {
+    context.enumValuesCache.set(type, null);
     return [];
   }
 
@@ -1153,7 +1165,9 @@ function getEnumLiteralExpressions(type: ts.Type, context: GenerationContext): s
     }
   }
 
-  return [...new Set(expressions)];
+  const unique = [...new Set(expressions)];
+  context.enumValuesCache.set(type, unique.length > 0 ? unique : null);
+  return unique;
 }
 
 function getEnumDeclaration(type: ts.Type): ts.EnumDeclaration | undefined {
@@ -1240,7 +1254,7 @@ function emitInlineObject(
 ): string {
   const checker = context.checker;
   maybeWarnOnIndexSignature(type, context, rootTypeText, propertyPath);
-  const properties = checker.getPropertiesOfType(type);
+  const properties = getPropertiesOfTypeCached(type, context);
   if (properties.length === 0) {
     return `{} as ${typeText}`;
   }
@@ -1270,7 +1284,7 @@ function emitInlineObject(
       propertyType,
       context,
       depth + 1,
-      checker.typeToString(propertyType),
+      getTypeText(propertyType, context),
       rootTypeText,
       [...propertyPath, property.name],
       getDeclaredTypeText(declaration, context.sourceFile),
@@ -1613,6 +1627,28 @@ function formatWarningLocation(rootTypeText: string, propertyPath: string[], lea
     return rootTypeText;
   }
   return `${rootTypeText}.${parts.join(".")}`;
+}
+
+function getTypeText(type: ts.Type, context: GenerationContext): string {
+  const cached = context.typeTextCache.get(type);
+  if (cached) {
+    return cached;
+  }
+
+  const value = context.checker.typeToString(type, context.sourceFile, ts.TypeFormatFlags.NoTruncation);
+  context.typeTextCache.set(type, value);
+  return value;
+}
+
+function getPropertiesOfTypeCached(type: ts.Type, context: GenerationContext): ts.Symbol[] {
+  const cached = context.propertiesCache.get(type);
+  if (cached) {
+    return cached;
+  }
+
+  const value = context.checker.getPropertiesOfType(type);
+  context.propertiesCache.set(type, value);
+  return value;
 }
 
 function ensureFakerImport(source: string): string {

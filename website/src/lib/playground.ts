@@ -1,6 +1,7 @@
 import ts from "typescript";
 
-type TypeMap = Map<string, ts.InterfaceDeclaration | ts.TypeAliasDeclaration>;
+type TypeDeclaration = ts.InterfaceDeclaration | ts.TypeAliasDeclaration;
+type TypeMap = Map<string, TypeDeclaration>;
 
 type GenerateResult = {
   code: string;
@@ -19,51 +20,128 @@ export function generateFactoryFromSource(source: string): GenerateResult {
     return {code: "", errors};
   }
 
+  const declarations: TypeDeclaration[] = [];
   const typeMap: TypeMap = new Map();
 
   for (const statement of sourceFile.statements) {
     if (ts.isInterfaceDeclaration(statement) || ts.isTypeAliasDeclaration(statement)) {
+      declarations.push(statement);
       typeMap.set(statement.name.text, statement);
     }
   }
 
-  if (typeMap.size === 0) {
+  if (declarations.length === 0) {
     return {
       code: "",
       errors: ["No interface or type alias found. Add a type like `interface User { id: string }` and try again."],
     };
   }
 
-  const [rootName] = [...typeMap.keys()];
-  const rootDeclaration = typeMap.get(rootName);
+  const blocks = ["import {faker} from \"@faker-js/faker\";", ""];
 
-  if (!rootDeclaration) {
-    return {code: "", errors: ["Unable to resolve root type declaration."]};
+  for (const declaration of declarations) {
+    blocks.push(renderFactory(declaration, typeMap, errors, sourceFile), "");
   }
-
-  const visited = new Set<string>();
-  const rootTypeNode = ts.isInterfaceDeclaration(rootDeclaration) ? undefined : rootDeclaration.type;
-  const renderedObject = renderObjectExpression(rootTypeNode, rootDeclaration, typeMap, visited, errors, sourceFile);
 
   if (errors.length > 0) {
     return {code: "", errors};
   }
 
-  return {
-    code: [
-      `// Generated from type: ${rootName}`,
-      `export const make${rootName} = (overrides: Partial<${rootName}> = {}): ${rootName} => ({`,
-      indent(renderedObject),
+  return {code: blocks.join("\n").trim(), errors: []};
+}
+
+function renderFactory(
+  declaration: TypeDeclaration,
+  typeMap: TypeMap,
+  errors: string[],
+  sourceFile: ts.SourceFile,
+): string {
+  const typeName = declaration.name.text;
+  const visited = new Set<string>([typeName]);
+
+  if (isObjectDeclaration(declaration, typeMap, errors, sourceFile, visited)) {
+    const objectExpr = renderObjectExpression(
+      ts.isTypeAliasDeclaration(declaration) ? declaration.type : undefined,
+      declaration,
+      typeMap,
+      visited,
+      errors,
+      sourceFile,
+    );
+
+    return [
+      `// Generated from type: ${typeName}`,
+      `export const make${typeName} = (overrides: Partial<${typeName}> = {}): ${typeName} => ({`,
+      indent(objectExpr),
       "  ...overrides,",
       "});",
-    ].join("\n"),
-    errors: [],
-  };
+    ].join("\n");
+  }
+
+  const value = ts.isTypeAliasDeclaration(declaration)
+    ? renderTypeNode(declaration.type, typeMap, visited, errors, sourceFile)
+    : "null";
+
+  if (!value) {
+    errors.push(`Unable to generate factory output for \`${typeName}\`.`);
+  }
+
+  return [
+    `// Generated from type: ${typeName}`,
+    `export const make${typeName} = (): ${typeName} => ${value ?? "null"};`,
+  ].join("\n");
+}
+
+function isObjectDeclaration(
+  declaration: TypeDeclaration,
+  typeMap: TypeMap,
+  errors: string[],
+  sourceFile: ts.SourceFile,
+  visited: Set<string>,
+): boolean {
+  if (ts.isInterfaceDeclaration(declaration)) {
+    return true;
+  }
+
+  return isObjectTypeNode(declaration.type, typeMap, errors, sourceFile, visited);
+}
+
+function isObjectTypeNode(
+  typeNode: ts.TypeNode,
+  typeMap: TypeMap,
+  errors: string[],
+  sourceFile: ts.SourceFile,
+  visited: Set<string>,
+): boolean {
+  if (ts.isTypeLiteralNode(typeNode) || ts.isIntersectionTypeNode(typeNode)) {
+    return true;
+  }
+
+  if (ts.isTypeReferenceNode(typeNode) && ts.isIdentifier(typeNode.typeName)) {
+    const refName = typeNode.typeName.text;
+    const refDecl = typeMap.get(refName);
+
+    if (!refDecl) {
+      return false;
+    }
+
+    if (visited.has(refName)) {
+      errors.push(`Circular type reference detected for \`${refName}\`.`);
+      return false;
+    }
+
+    visited.add(refName);
+    const result = isObjectDeclaration(refDecl, typeMap, errors, sourceFile, visited);
+    visited.delete(refName);
+    return result;
+  }
+
+  return false;
 }
 
 function renderObjectExpression(
   inlineTypeNode: ts.TypeNode | undefined,
-  declaration: ts.InterfaceDeclaration | ts.TypeAliasDeclaration,
+  declaration: TypeDeclaration,
   typeMap: TypeMap,
   visited: Set<string>,
   errors: string[],
@@ -98,7 +176,7 @@ function renderObjectExpression(
 
 function getMembers(
   inlineTypeNode: ts.TypeNode | undefined,
-  declaration: ts.InterfaceDeclaration | ts.TypeAliasDeclaration,
+  declaration: TypeDeclaration,
   typeMap: TypeMap,
   visited: Set<string>,
   errors: string[],
@@ -165,7 +243,16 @@ function getMembers(
           continue;
         }
 
-        members.push(...getMembers(ts.isTypeAliasDeclaration(refDecl) ? refDecl.type : undefined, refDecl, typeMap, visited, errors, sourceFile));
+        members.push(
+          ...getMembers(
+            ts.isTypeAliasDeclaration(refDecl) ? refDecl.type : undefined,
+            refDecl,
+            typeMap,
+            visited,
+            errors,
+            sourceFile,
+          ),
+        );
       }
     }
 
@@ -183,23 +270,23 @@ function renderTypeNode(
   sourceFile: ts.SourceFile,
 ): string | null {
   if (!typeNode) {
-    return "null";
+    return "faker.helpers.arrayElement([null])";
   }
 
   if (typeNode.kind === ts.SyntaxKind.StringKeyword) {
-    return "\"example\"";
+    return "faker.string.sample()";
   }
 
   if (typeNode.kind === ts.SyntaxKind.NumberKeyword) {
-    return "123";
+    return "faker.number.int({ min: 1, max: 1000 })";
   }
 
   if (typeNode.kind === ts.SyntaxKind.BooleanKeyword) {
-    return "true";
+    return "faker.datatype.boolean()";
   }
 
   if (typeNode.kind === ts.SyntaxKind.BigIntKeyword) {
-    return "123n";
+    return "BigInt(faker.number.int({ min: 1, max: 1000 }))";
   }
 
   if (typeNode.kind === ts.SyntaxKind.NullKeyword) {
@@ -207,7 +294,7 @@ function renderTypeNode(
   }
 
   if (typeNode.kind === ts.SyntaxKind.AnyKeyword || typeNode.kind === ts.SyntaxKind.UnknownKeyword) {
-    return "{}";
+    return "faker.helpers.arrayElement([{}, null])";
   }
 
   if (ts.isLiteralTypeNode(typeNode)) {
@@ -227,8 +314,14 @@ function renderTypeNode(
   }
 
   if (ts.isUnionTypeNode(typeNode)) {
-    const pick = typeNode.types.find((candidate) => !NULLISH_KINDS.has(candidate.kind)) ?? typeNode.types[0];
-    return renderTypeNode(pick, typeMap, visited, errors, sourceFile);
+    const candidates = typeNode.types.filter((candidate) => !NULLISH_KINDS.has(candidate.kind));
+    const values = candidates.length > 0 ? candidates : typeNode.types;
+
+    if (values.every((candidate) => ts.isLiteralTypeNode(candidate))) {
+      return `faker.helpers.arrayElement([${values.map((value) => value.getText(sourceFile)).join(", ")}])`;
+    }
+
+    return renderTypeNode(values[0], typeMap, visited, errors, sourceFile);
   }
 
   if (ts.isParenthesizedTypeNode(typeNode)) {
@@ -257,7 +350,7 @@ function renderTypeNode(
     const refName = typeNode.typeName.text;
 
     if (refName === "Date") {
-      return "new Date()";
+      return "faker.date.recent()";
     }
 
     if (refName === "Record") {
@@ -280,18 +373,7 @@ function renderTypeNode(
       return null;
     }
 
-    visited.add(refName);
-    const objectExpr = renderObjectExpression(
-      ts.isTypeAliasDeclaration(refDecl) ? refDecl.type : undefined,
-      refDecl,
-      typeMap,
-      visited,
-      errors,
-      sourceFile,
-    );
-    visited.delete(refName);
-
-    return `{\n${objectExpr}\n}`;
+    return `make${refName}()`;
   }
 
   errors.push(`Unsupported type syntax: \`${typeNode.getText(sourceFile)}\` (line ${lineOf(sourceFile, typeNode)}).`);

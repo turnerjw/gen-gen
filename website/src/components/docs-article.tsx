@@ -40,7 +40,7 @@ export function DocsArticle({title, summary, children}: DocsArticleProps) {
         <footer className="grid gap-3 border-t pt-4 sm:grid-cols-2">
           <div>
             {previous ? (
-              <Link to={previous.to} className="block rounded-md border p-3 hover:bg-muted/50">
+              <Link to={previous.to} className="block rounded-md border bg-card p-3 hover:bg-muted/60">
                 <p className="text-xs uppercase tracking-wide text-muted-foreground">Previous</p>
                 <p className="font-medium">{previous.title}</p>
               </Link>
@@ -48,7 +48,7 @@ export function DocsArticle({title, summary, children}: DocsArticleProps) {
           </div>
           <div>
             {next ? (
-              <Link to={next.to} className="block rounded-md border p-3 text-right hover:bg-muted/50">
+              <Link to={next.to} className="block rounded-md border bg-card p-3 text-right hover:bg-muted/60">
                 <p className="text-xs uppercase tracking-wide text-muted-foreground">Next</p>
                 <p className="font-medium">{next.title}</p>
               </Link>

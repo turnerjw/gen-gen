@@ -25,7 +25,7 @@ function DocsLayout() {
 
   return (
     <div className="grid gap-6 md:grid-cols-[280px_1fr]">
-      <aside className="h-fit space-y-3 rounded-lg border p-3 text-sm md:sticky md:top-6">
+      <aside className="h-fit space-y-3 rounded-lg border bg-card p-3 text-sm md:sticky md:top-6">
         <div>
           <div className="font-medium">Documentation</div>
           <p className="text-xs text-muted-foreground">MVP reference for CLI, API, plugin, and behavior details.</p>
@@ -49,7 +49,9 @@ function DocsLayout() {
                 key={item.to}
                 to={item.to}
                 className={`rounded px-2 py-1.5 ${
-                  active ? "bg-muted font-medium text-foreground" : "text-muted-foreground hover:text-foreground"
+                  active
+                    ? "bg-muted font-medium text-foreground"
+                    : "bg-card text-muted-foreground hover:bg-muted/60 hover:text-foreground"
                 }`}
               >
                 {item.title}
@@ -60,7 +62,7 @@ function DocsLayout() {
         </nav>
       </aside>
 
-      <section className="min-w-0 rounded-lg border p-5">
+      <section className="min-w-0 rounded-lg border bg-card p-5">
         <Outlet />
       </section>
     </div>

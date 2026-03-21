@@ -55,7 +55,7 @@ cd "$REPO"
 echo "=== Task $id: $title ==="
 echo "Plan: $PLAN"
 echo ""
-claude --dangerously-skip-permissions -p "\$(cat "$prompt_file")"
+claude -p "\$(cat "$prompt_file")"
 exit_code=\$?
 if [ "\$exit_code" -eq 0 ]; then
   touch "$done_file"

@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "Website (Vite dev)",
+      "runtimeExecutable": "bash",
+      "runtimeArgs": ["-c", "cd website && bun run dev"],
+      "port": 5173
+    },
+    {
+      "name": "Website (preview built)",
+      "runtimeExecutable": "bash",
+      "runtimeArgs": ["-c", "cd website && bun run preview"],
+      "port": 4173
+    }
+  ]
+}

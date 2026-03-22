@@ -16,7 +16,6 @@ export interface CliOptions {
   dryRun: boolean;
   failOnWarn: boolean;
   optionalProperties: PropertyPolicy["optionalProperties"];
-  readonlyProperties: PropertyPolicy["readonlyProperties"];
   indexSignatures: PropertyPolicy["indexSignatures"];
   fakerStrategyModule?: string;
   fakerStrategy?: FakerStrategyHook;
@@ -86,7 +85,6 @@ export function parseArgs(args: string[]): CliOptions {
     dryRun: false,
     failOnWarn: false,
     optionalProperties: "include",
-    readonlyProperties: "include",
     indexSignatures: "ignore",
     typeMappingPresets: [],
     watchDiagnostics: false,
@@ -133,16 +131,6 @@ export function parseArgs(args: string[]): CliOptions {
         throw new Error("Expected --optional-properties to be one of: include, omit.");
       }
       options.optionalProperties = value;
-      i += 1;
-      continue;
-    }
-
-    if (arg === "--readonly-properties") {
-      const value = args[i + 1];
-      if (value !== "include" && value !== "warn") {
-        throw new Error("Expected --readonly-properties to be one of: include, warn.");
-      }
-      options.readonlyProperties = value;
       i += 1;
       continue;
     }
@@ -232,8 +220,6 @@ Options:
       --fail-on-warn  Exit with error if generation emits warnings
       --optional-properties <include|omit>
                      Include or omit optional properties in generated base objects
-      --readonly-properties <include|warn>
-                     Include readonly properties and optionally emit warnings
       --index-signatures <ignore|warn>
                      Ignore or warn when index signatures are not materialized
       --faker-strategy <path>
@@ -338,7 +324,6 @@ export function createWatchModeRuntime(
         failOnWarn: options.failOnWarn,
         propertyPolicy: {
           optionalProperties: options.optionalProperties,
-          readonlyProperties: options.readonlyProperties,
           indexSignatures: options.indexSignatures,
         },
         fakerStrategy,
@@ -432,7 +417,6 @@ export async function main(args = process.argv.slice(2)): Promise<void> {
     failOnWarn: options.failOnWarn,
     propertyPolicy: {
       optionalProperties: options.optionalProperties,
-      readonlyProperties: options.readonlyProperties,
       indexSignatures: options.indexSignatures,
     },
     fakerStrategy,

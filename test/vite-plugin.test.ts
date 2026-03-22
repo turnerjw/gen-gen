@@ -26,7 +26,6 @@ describe("vite plugin", () => {
         failOnWarn: true,
         propertyPolicy: {
           optionalProperties: "omit",
-          readonlyProperties: "warn",
           indexSignatures: "warn",
         },
         typeMappingPresets: ["common"],
@@ -60,7 +59,6 @@ describe("vite plugin", () => {
     expect(generatedOptions[0]?.failOnWarn).toBeTrue();
     expect(generatedOptions[0]?.propertyPolicy).toEqual({
       optionalProperties: "omit",
-      readonlyProperties: "warn",
       indexSignatures: "warn",
     });
     expect(generatedOptions[0]?.typeMappingPresets).toEqual(["common"]);

@@ -14,7 +14,6 @@ function baseOptions(): CliOptions {
     dryRun: false,
     failOnWarn: false,
     optionalProperties: "include",
-    readonlyProperties: "include",
     indexSignatures: "ignore",
     typeMappingPresets: [],
     watchDiagnostics: false,

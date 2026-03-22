@@ -1044,4 +1044,80 @@ import type { Mixed } from "./types";
     expect(result.content).toContain("faker.number.int({ min: 1, max: 1000 })");
     expect(result.content).toContain("code: faker.word.noun()");
   });
+
+  test("emits FakerOverridePaths union type with all valid path keys", async () => {
+    const cwd = await createFixture({
+      "types.ts": `
+export type User = {
+  id: string;
+  name: string;
+  profile: {
+    locale: string;
+  };
+};
+`,
+      "data-gen.ts": `
+import type { User } from "./types";
+
+/**
+ * Generated below - DO NOT EDIT
+ */
+`,
+    });
+
+    const result = await generateDataFile({cwd, write: false});
+
+    expect(result.content).toContain("export type FakerOverridePaths =");
+    expect(result.content).toContain('"User.id"');
+    expect(result.content).toContain('"User.name"');
+    expect(result.content).toContain('"User.profile"');
+    expect(result.content).toContain('"User.profile.locale"');
+  });
+
+  test("emits TypedFakerOverrides mapped type referencing FakerOverridePaths", async () => {
+    const cwd = await createFixture({
+      "types.ts": `
+export type Item = {
+  label: string;
+  count: number;
+};
+`,
+      "data-gen.ts": `
+import type { Item } from "./types";
+
+/**
+ * Generated below - DO NOT EDIT
+ */
+`,
+    });
+
+    const result = await generateDataFile({cwd, write: false});
+
+    expect(result.content).toContain("export type TypedFakerOverrides =");
+    expect(result.content).toContain("[K in FakerOverridePaths | (string & {})]?");
+    expect(result.content).toContain("((...args: any[]) => unknown) | string");
+  });
+
+  test("FakerOverridePaths includes paths for multiple types", async () => {
+    const cwd = await createFixture({
+      "types.ts": `
+export type Post = { title: string; body: string };
+export type Comment = { text: string; rating: number };
+`,
+      "data-gen.ts": `
+import type { Post, Comment } from "./types";
+
+/**
+ * Generated below - DO NOT EDIT
+ */
+`,
+    });
+
+    const result = await generateDataFile({cwd, write: false});
+
+    expect(result.content).toContain('"Post.title"');
+    expect(result.content).toContain('"Post.body"');
+    expect(result.content).toContain('"Comment.text"');
+    expect(result.content).toContain('"Comment.rating"');
+  });
 });

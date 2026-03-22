@@ -48,7 +48,6 @@ export interface GenerateResult {
 
 export interface PropertyPolicy {
   optionalProperties: "include" | "omit";
-  readonlyProperties: "include" | "warn";
   indexSignatures: "ignore" | "warn";
 }
 
@@ -85,7 +84,6 @@ const DEFAULT_INPUT = "data-gen.ts";
 const DEFAULT_MARKER_TEXT = "Generated below - DO NOT EDIT";
 const DEFAULT_PROPERTY_POLICY: PropertyPolicy = {
   optionalProperties: "include",
-  readonlyProperties: "include",
   indexSignatures: "ignore",
 };
 
@@ -144,7 +142,6 @@ function buildFailOnWarnMessage(warnings: string[]): string {
 function resolvePropertyPolicy(policy: Partial<PropertyPolicy> | undefined): PropertyPolicy {
   return {
     optionalProperties: policy?.optionalProperties ?? DEFAULT_PROPERTY_POLICY.optionalProperties,
-    readonlyProperties: policy?.readonlyProperties ?? DEFAULT_PROPERTY_POLICY.readonlyProperties,
     indexSignatures: policy?.indexSignatures ?? DEFAULT_PROPERTY_POLICY.indexSignatures,
   };
 }
@@ -689,11 +686,6 @@ function emitObjectLiteral(
   for (const property of properties) {
     if (context.policy.optionalProperties === "omit" && isOptionalProperty(property)) {
       continue;
-    }
-
-    if (context.policy.readonlyProperties === "warn" && isReadonlyProperty(property)) {
-      const location = formatWarningLocation(rootTypeText, propertyPath, property.name);
-      context.emittedWarnings.add(`Readonly property included by policy at ${location}.`);
     }
 
     const declaration = property.valueDeclaration ?? property.declarations?.[0] ?? context.sourceFile;
@@ -1281,11 +1273,6 @@ function emitInlineObject(
   for (const property of properties) {
     if (context.policy.optionalProperties === "omit" && isOptionalProperty(property)) {
       continue;
-    }
-
-    if (context.policy.readonlyProperties === "warn" && isReadonlyProperty(property)) {
-      const location = formatWarningLocation(rootTypeText, propertyPath, property.name);
-      context.emittedWarnings.add(`Readonly property included by policy at ${location}.`);
     }
 
     const declaration = property.valueDeclaration ?? property.declarations?.[0] ?? context.sourceFile;

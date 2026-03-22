@@ -737,7 +737,7 @@ import type { Account } from "./types";
     expect(result.content).not.toContain("email:");
   });
 
-  test("emits warnings for readonly properties and index signatures by policy", async () => {
+  test("emits warnings for index signatures by policy", async () => {
     const cwd = await createFixture({
       "types.ts": `
 export type Config = {
@@ -760,12 +760,11 @@ import type { Config } from "./types";
       cwd,
       write: false,
       propertyPolicy: {
-        readonlyProperties: "warn",
         indexSignatures: "warn",
       },
     });
 
-    expect(result.warnings).toContain("Readonly property included by policy at Config.id.");
+    expect(result.warnings).not.toContain("Readonly property included by policy at Config.id.");
     expect(result.warnings).toContain("Index signature (string) not materialized at Config.values.");
     expect(result.content).toContain("id: faker.word.noun()");
   });

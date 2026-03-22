@@ -105,7 +105,7 @@ export async function generateDataFile(options: GenerateOptions = {}): Promise<G
     parsed.targets,
     parsed.checker,
     parsed.sourceFile,
-    options.deepMerge ?? false,
+    options.deepMerge ?? true,
     parsed.fakerOverrides,
     options.fakerStrategy,
     options.typeMappingPresets ?? [],

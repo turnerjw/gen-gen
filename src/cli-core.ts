@@ -91,7 +91,7 @@ export function parseArgs(args: string[]): CliOptions {
     typeMappingPresets: [],
     watchDiagnostics: false,
     watch: false,
-    deepMerge: false,
+    deepMerge: true,
     include: [],
     exclude: [],
     fakerOverrides: {},

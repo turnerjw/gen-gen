@@ -509,6 +509,56 @@ import type { User } from "./types";
     expect(result.content).not.toContain("id: faker.string.uuid()");
   });
 
+  test("handles block-body zero-arg arrow functions in FakerOverrides same as expression-body", async () => {
+    const cwd = await createFixture({
+      "types.ts": `
+export type User = {
+  email: string;
+};
+`,
+      "data-gen.ts": `
+import type { User } from "./types";
+
+const FakerOverrides = {
+  email: () => { return faker.internet.email(); },
+} as const;
+
+/**
+ * Generated below - DO NOT EDIT
+ */
+`,
+    });
+
+    const result = await generateDataFile({cwd, write: false});
+
+    expect(result.content).toContain("email: faker.internet.email()");
+  });
+
+  test("handles bare function references in FakerOverrides by calling them", async () => {
+    const cwd = await createFixture({
+      "types.ts": `
+export type User = {
+  email: string;
+};
+`,
+      "data-gen.ts": `
+import type { User } from "./types";
+
+const FakerOverrides = {
+  email: faker.internet.email,
+} as const;
+
+/**
+ * Generated below - DO NOT EDIT
+ */
+`,
+    });
+
+    const result = await generateDataFile({cwd, write: false});
+
+    expect(result.content).toContain("email: faker.internet.email()");
+  });
+
   test("applies common preset mappings when enabled", async () => {
     const cwd = await createFixture({
       "types.ts": `

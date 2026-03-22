@@ -1182,4 +1182,79 @@ import type { Post, Comment } from "./types";
     expect(result.content).toContain('"Comment.text"');
     expect(result.content).toContain('"Comment.rating"');
   });
+
+  test("applies FakerStrategy declared in source file as arrow function", async () => {
+    const cwd = await createFixture({
+      "types.ts": `
+export type User = {
+  id: string;
+  email: string;
+  age: number;
+};
+`,
+      "data-gen.ts": `
+import type { User } from "./types";
+
+const FakerStrategy = (ctx) => {
+  if (ctx.rootTypeText === "User" && ctx.path === "id") {
+    return { expression: "faker.string.uuid()", invokeMode: "raw" };
+  }
+  if (ctx.path === "email") {
+    return { expression: "faker.internet.email()", invokeMode: "raw" };
+  }
+  return undefined;
+};
+
+/**
+ * Generated below - DO NOT EDIT
+ */
+`,
+    });
+
+    const result = await generateDataFile({cwd, write: false});
+
+    expect(result.content).toContain("id: faker.string.uuid()");
+    expect(result.content).toContain("email: faker.internet.email()");
+    expect(result.content).toContain("age: faker.number.int({ min: 1, max: 1000 })");
+  });
+
+  test("API-level fakerStrategy overrides file-level FakerStrategy", async () => {
+    const cwd = await createFixture({
+      "types.ts": `
+export type User = {
+  id: string;
+  email: string;
+};
+`,
+      "data-gen.ts": `
+import type { User } from "./types";
+
+const FakerStrategy = (ctx) => {
+  if (ctx.path === "id") {
+    return { expression: "faker.string.uuid()", invokeMode: "raw" };
+  }
+  return undefined;
+};
+
+/**
+ * Generated below - DO NOT EDIT
+ */
+`,
+    });
+
+    const result = await generateDataFile({
+      cwd,
+      write: false,
+      fakerStrategy(context) {
+        if (context.path === "id") {
+          return {expression: "faker.string.alphanumeric(12)", invokeMode: "raw"};
+        }
+        return undefined;
+      },
+    });
+
+    // API strategy wins: alphanumeric, not uuid
+    expect(result.content).toContain("id: faker.string.alphanumeric(12)");
+    expect(result.content).not.toContain("id: faker.string.uuid()");
+  });
 });

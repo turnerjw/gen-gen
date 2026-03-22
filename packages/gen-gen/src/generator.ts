@@ -105,13 +105,14 @@ export async function generateDataFile(options: GenerateOptions = {}): Promise<G
     exclude: options.exclude ?? [],
     fakerOverrides: options.fakerOverrides ?? {},
   });
+  const fakerStrategy = options.fakerStrategy ?? parsed.fakerStrategy;
   const emitted = emitFunctions(
     parsed.targets,
     parsed.checker,
     parsed.sourceFile,
     options.deepMerge ?? true,
     parsed.fakerOverrides,
-    options.fakerStrategy,
+    fakerStrategy,
     options.typeMappingPresets ?? [],
     resolvePropertyPolicy(options.propertyPolicy),
   );
@@ -166,6 +167,7 @@ function parseTargets(
   warnings: string[];
   watchedFiles: string[];
   fakerOverrides: Map<string, FakerOverrideSpec>;
+  fakerStrategy: FakerStrategyHook | undefined;
 } {
   const compilerOptions: ts.CompilerOptions = {
     target: ts.ScriptTarget.ESNext,
@@ -234,6 +236,8 @@ function parseTargets(
     .map((file) => path.resolve(file.fileName))
     .filter((fileName) => !fileName.includes("/node_modules/") && !fileName.endsWith(".d.ts"));
 
+  const fakerStrategy = collectFakerStrategy(sourceFile);
+
   return {
     sourceFile,
     checker,
@@ -241,6 +245,7 @@ function parseTargets(
     warnings,
     watchedFiles,
     fakerOverrides,
+    fakerStrategy,
   };
 }
 
@@ -389,6 +394,43 @@ function collectFakerOverrides(sourceFile: ts.SourceFile, warnings: string[]): R
   }
 
   return overrides;
+}
+
+function collectFakerStrategy(sourceFile: ts.SourceFile): FakerStrategyHook | undefined {
+  for (const statement of sourceFile.statements) {
+    let funcText: string | undefined;
+
+    // Handle: const FakerStrategy = (ctx) => { ... }
+    if (ts.isVariableStatement(statement)) {
+      const decl = statement.declarationList.declarations[0];
+      if (
+        decl &&
+        ts.isIdentifier(decl.name) &&
+        decl.name.text === "FakerStrategy" &&
+        decl.initializer
+      ) {
+        funcText = decl.initializer.getText(sourceFile);
+      }
+    }
+
+    // Handle: function FakerStrategy(ctx) { ... }
+    if (ts.isFunctionDeclaration(statement) && statement.name?.text === "FakerStrategy") {
+      funcText = statement.getText(sourceFile);
+      // Convert to expression form for eval
+      funcText = funcText.replace(/^function\s+FakerStrategy/, "function");
+    }
+
+    if (funcText) {
+      try {
+        // eslint-disable-next-line no-eval
+        const fn = eval(`(${funcText})`);
+        if (typeof fn === "function") return fn as FakerStrategyHook;
+      } catch {
+        // ignore eval errors
+      }
+    }
+  }
+  return undefined;
 }
 
 function unwrapObjectLiteralExpression(expression: ts.Expression): ts.ObjectLiteralExpression | undefined {

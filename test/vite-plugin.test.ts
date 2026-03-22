@@ -166,10 +166,9 @@ describe("vite plugin", () => {
     const warnings: string[] = [];
     let generateCall = 0;
 
+    process.env.GEN_GEN_WATCH_DIAGNOSTICS = "1";
     const plugin = createGenGenPlugin(
-      {
-        watchDiagnostics: true,
-      },
+      {},
       {
         async generate() {
           generateCall += 1;
@@ -205,5 +204,6 @@ describe("vite plugin", () => {
 
     expect(warnings.some((message) => message.includes("vite watch trigger:"))).toBeTrue();
     expect(warnings.some((message) => message.includes("vite watch run #2 metrics"))).toBeTrue();
+    delete process.env.GEN_GEN_WATCH_DIAGNOSTICS;
   });
 });

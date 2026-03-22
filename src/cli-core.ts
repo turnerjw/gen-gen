@@ -21,7 +21,6 @@ export interface CliOptions {
   fakerStrategyModule?: string;
   fakerStrategy?: FakerStrategyHook;
   typeMappingPresets: TypeMappingPresetName[];
-  watchDiagnostics: boolean;
   watch: boolean;
   deepMerge: boolean;
   include: string[];
@@ -89,7 +88,6 @@ export function parseArgs(args: string[]): CliOptions {
     readonlyProperties: "include",
     indexSignatures: "ignore",
     typeMappingPresets: [],
-    watchDiagnostics: false,
     watch: false,
     deepMerge: false,
     include: [],
@@ -183,11 +181,6 @@ export function parseArgs(args: string[]): CliOptions {
       continue;
     }
 
-    if (arg === "--watch-diagnostics") {
-      options.watchDiagnostics = true;
-      continue;
-    }
-
     if (arg === "--deep-merge") {
       options.deepMerge = true;
       continue;
@@ -241,8 +234,6 @@ Options:
       --preset <name[,name...]>
                      Type-mapping preset(s): common, commerce
   -w, --watch         Regenerate on file changes
-      --watch-diagnostics
-                     Log watch triggers and per-run timing/summary metrics
       --deep-merge    Deep merge overrides instead of shallow spread
       --include       Comma-separated generator/type filters to include
       --exclude       Comma-separated generator/type filters to exclude
@@ -288,7 +279,7 @@ export function createWatchModeRuntime(
   };
 
   const triggerRun = (file?: string): void => {
-    if (options.watchDiagnostics && file) {
+    if (process.env.GEN_GEN_WATCH_DIAGNOSTICS === "1" && file) {
       deps.log(`[gen-gen] watch trigger: ${path.relative(process.cwd(), path.resolve(file))}`);
     }
     scheduleRun();
@@ -355,7 +346,7 @@ export function createWatchModeRuntime(
 
       const verb = result.changed ? "Generated" : "No changes for";
       deps.log(`[gen-gen] ${verb} ${path.relative(process.cwd(), result.inputPath)}`);
-      if (options.watchDiagnostics) {
+      if (process.env.GEN_GEN_WATCH_DIAGNOSTICS === "1") {
         const elapsedMs = Date.now() - startedAt;
         deps.log(
           `[gen-gen] watch run #${runCount} metrics: ${elapsedMs}ms, changed=${result.changed}, warnings=${result.warnings.length}, watched=${result.watchedFiles.length}`,
@@ -400,7 +391,7 @@ export async function runWatchMode(options: CliOptions): Promise<void> {
   });
 
   console.log("[gen-gen] Watching for changes...");
-  if (options.watchDiagnostics) {
+  if (process.env.GEN_GEN_WATCH_DIAGNOSTICS === "1") {
     console.log("[gen-gen] Watch diagnostics enabled.");
   }
   await runtime.run();

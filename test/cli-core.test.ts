@@ -22,9 +22,7 @@ describe("cli-core parseArgs", () => {
     expect(() => parseArgs(["--preset", "unknown"])).toThrow("Unknown preset(s): unknown. Allowed presets: common, commerce.");
   });
 
-  test("parses --watch-diagnostics", () => {
-    const options = parseArgs(["--watch", "--watch-diagnostics"]);
-    expect(options.watch).toBeTrue();
-    expect(options.watchDiagnostics).toBeTrue();
+  test("throws for unknown --watch-diagnostics flag", () => {
+    expect(() => parseArgs(["--watch", "--watch-diagnostics"])).toThrow("Unknown argument: --watch-diagnostics");
   });
 });

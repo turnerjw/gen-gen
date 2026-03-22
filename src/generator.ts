@@ -5,7 +5,6 @@ import ts from "typescript";
 export interface GenerateOptions {
   input?: string;
   cwd?: string;
-  markerText?: string;
   write?: boolean;
   failOnWarn?: boolean;
   propertyPolicy?: Partial<PropertyPolicy>;
@@ -91,7 +90,6 @@ const DEFAULT_PROPERTY_POLICY: PropertyPolicy = {
 
 export async function generateDataFile(options: GenerateOptions = {}): Promise<GenerateResult> {
   const cwd = options.cwd ?? process.cwd();
-  const markerText = options.markerText ?? DEFAULT_MARKER_TEXT;
   const inputPath = path.resolve(cwd, options.input ?? DEFAULT_INPUT);
   const write = options.write ?? true;
 
@@ -121,7 +119,7 @@ export async function generateDataFile(options: GenerateOptions = {}): Promise<G
   }
 
   let next = ensureFakerImport(original);
-  next = replaceGeneratedSection(next, emitted.content, markerText);
+  next = replaceGeneratedSection(next, emitted.content, DEFAULT_MARKER_TEXT);
 
   const changed = original !== next;
   if (write && changed) {

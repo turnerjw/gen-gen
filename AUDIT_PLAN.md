@@ -33,6 +33,9 @@ Batch B (after Batch A, independent of each other)
 Batch C (after Batch B)
 ├── T12:   Strip project-specific options from API/CLI  ← needs T10 + T11
 └── T13:   Remove typeMappingPresets                    ← needs T11
+
+Batch D (after Batch C)
+└── T15:   TypeScript Language Service incremental compilation  ← needs T12 + T13
 ```
 
 All PRs target `main`. Each task gets its own worktree and changeset.
@@ -287,6 +290,59 @@ Note: `FakerStrategyContext` and `FakerStrategyResult` are already defined in `g
 **Tests:** Add fixture tests verifying the generated union and map types are correct.
 
 **Changeset:** `minor` — "Generate FakerOverridePaths and TypedFakerOverrides utility types for type-safe override keys"
+
+---
+
+### T15 — TypeScript Language Service for incremental compilation
+
+**What:** Replace `ts.createProgram()` (called from scratch on every generation) with `ts.createLanguageService()`, which caches type-checking state across invocations. In watch mode and the Vite plugin, TypeScript currently re-analyzes every file on every trigger. With a shared `LanguageService` instance, only changed files are re-checked.
+
+**Prerequisite:** T12 and T13 merged — both modify `parseTargets()` and the watch/plugin wiring; landing this on top avoids merge conflicts.
+
+**Files:** `src/generator.ts`, `src/cli-core.ts`, `src/vite-plugin.ts`
+
+**Changes:**
+
+`src/generator.ts` — update `parseTargets()` to accept an optional `ts.LanguageService` instead of calling `ts.createProgram()` internally:
+```ts
+// Before (lines ~177–178):
+const program = ts.createProgram([inputPath], compilerOptions);
+
+// After:
+const program = languageService.getProgram()!;
+```
+
+`src/cli-core.ts` — create one `LanguageService` before the watch loop and pass it into each `generateDataFile` call; bump the file version on each trigger to signal what changed:
+```ts
+const fileVersions = new Map<string, number>();
+const serviceHost: ts.LanguageServiceHost = {
+  getScriptFileNames: () => [inputPath],
+  getScriptVersion: (f) => String(fileVersions.get(f) ?? 0),
+  getScriptSnapshot: (f) => ts.ScriptSnapshot.fromString(fs.readFileSync(f, "utf8")),
+  getCurrentDirectory: () => cwd,
+  getCompilationSettings: () => compilerOptions,
+  getDefaultLibFileName: ts.getDefaultLibFilePath,
+  fileExists: ts.sys.fileExists,
+  readFile: ts.sys.readFile,
+  readDirectory: ts.sys.readDirectory,
+};
+const languageService = ts.createLanguageService(serviceHost);
+
+// On each watch trigger:
+fileVersions.set(changedFile, (fileVersions.get(changedFile) ?? 0) + 1);
+await generateDataFile({ ..., languageService });
+```
+
+`src/vite-plugin.ts` — same pattern: create once per plugin instance, reuse across HMR rebuilds.
+
+**Impact:**
+- **Watch mode**: only re-checks changed files instead of full `createProgram` on every save
+- **Vite plugin**: successive HMR builds are dramatically faster after the first cold build
+- **One-shot CLI**: functionally identical — first build still does full analysis
+
+**Tests:** Existing test suite should pass unchanged (output is identical). Add a watch-mode integration test that fires two consecutive generations and asserts the second completes faster (or at minimum that `createProgram` is not called on the second trigger).
+
+**Changeset:** `patch` — "Use TypeScript Language Service for incremental compilation in watch mode and Vite plugin"
 
 ---
 

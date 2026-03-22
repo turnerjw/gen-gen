@@ -693,6 +693,7 @@ function emitObjectLiteral(
     }
 
     const declaration = property.valueDeclaration ?? property.declarations?.[0] ?? context.sourceFile;
+
     if (hasGenGenIgnoreTag(declaration, context.sourceFile)) {
       const propertyName = needsQuotedProperty(property.name) ? JSON.stringify(property.name) : property.name;
       const propertyType = checker.getTypeOfSymbolAtLocation(property, declaration);
@@ -753,6 +754,13 @@ function emitSharedHelperRuntime(deepMerge: boolean): string {
     "    : `generate${Capitalize<string & K>}Item`]: (",
     "      overrides?: GenGenOverrides<__GenGenArrayItemPlainObject<NonNullable<T[K]>>>,",
     "    ) => __GenGenArrayItemPlainObject<NonNullable<T[K]>>;",
+    "} & {",
+    "  [K in keyof T as __GenGenArrayItemPlainObject<NonNullable<T[K]>> extends never",
+    "    ? never",
+    "    : `generate${Capitalize<string & K>}Items`]: (",
+    "      count: number,",
+    "      overrides?: GenGenOverrides<__GenGenArrayItemPlainObject<NonNullable<T[K]>>>,",
+    "    ) => __GenGenArrayItemPlainObject<NonNullable<T[K]>>[];",
     "};",
     "",
     "type GenGenOverrides<T extends object> = Partial<T> | ((helpers: GenGenHelpers<T>) => Partial<T>);",
@@ -802,6 +810,9 @@ function emitSharedHelperRuntime(deepMerge: boolean): string {
     "          if (firstMergeableItem) {",
     "            const arrayItemHelperName = `generate${key[0]?.toUpperCase() ?? \"\"}${key.slice(1)}Item`;",
     "            (helpers as Record<string, unknown>)[arrayItemHelperName] = __genGenCreateHelper(firstMergeableItem, helperCache);",
+    "            const arrayItemsHelperName = `generate${key[0]?.toUpperCase() ?? \"\"}${key.slice(1)}Items`;",
+    "            (helpers as Record<string, unknown>)[arrayItemsHelperName] = (count: number, overrides?: GenGenOverrides<typeof firstMergeableItem>) =>",
+    "              Array.from({ length: count }, () => (__genGenCreateHelper(firstMergeableItem, helperCache))(overrides));",
     "          }",
     "        }",
     "",

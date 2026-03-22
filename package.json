@@ -1,56 +1,24 @@
 {
-  "name": "gen-gen",
-  "version": "0.1.0",
-  "description": "Generate Faker-based test data builders from imported TypeScript types.",
-  "type": "module",
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
-  "module": "./dist/index.js",
-  "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
-    },
-    "./vite": {
-      "types": "./dist/vite-plugin.d.ts",
-      "import": "./dist/vite-plugin.js"
-    }
-  },
-  "bin": {
-    "gen-gen": "./dist/cli.js"
-  },
+  "private": true,
   "workspaces": [
+    "packages/*",
     "website"
   ],
-  "files": [
-    "dist"
-  ],
   "scripts": {
-    "dev": "bun run pkg:dev & bun run web:dev",
-    "pkg:dev": "tsc -p tsconfig.json --watch --preserveWatchOutput",
-    "build": "tsc -p tsconfig.json",
-    "typecheck": "tsc -p tsconfig.json --noEmit",
-    "check": "bun run typecheck && bun test && bun run web:typecheck && bun run web:build",
+    "dev": "bun run --filter gen-gen dev & bun run --filter gen-gen-website dev",
+    "build": "bun run --filter gen-gen build",
+    "typecheck": "bun run --filter gen-gen typecheck",
+    "test": "bun run --filter gen-gen test",
+    "check": "bun run --filter gen-gen typecheck && bun run --filter gen-gen test && bun run --filter gen-gen-website typecheck && bun run --filter gen-gen-website build",
     "web:dev": "bun run --filter gen-gen-website dev",
     "web:build": "bun run --filter gen-gen-website build",
     "web:typecheck": "bun run --filter gen-gen-website typecheck",
     "web:preview": "bun run --filter gen-gen-website preview",
     "changeset": "changeset",
-    "changeset version": "changeset version",
-    "changeset publish": "changeset publish",
     "changeset:version": "changeset version",
-    "changeset:publish": "changeset publish",
-    "gen:example": "bun run build && bun ./dist/cli.js --input example/basic/data-gen.ts && bun ./dist/cli.js --input example/generics/data-gen-generics.ts && bun ./dist/cli.js --input example/unions/data-gen-unions.ts && bun ./dist/cli.js --input example/deep-merge/data-gen-deep-merge.ts --deep-merge && bun ./dist/cli.js --input example/filters/data-gen-filters.ts --include Account,Session --exclude Session && bun ./dist/cli.js --input example/custom-faker/data-gen-custom-faker.ts --faker-override 'email=faker.internet.email()' && bun ./dist/cli.js --input example/ignore/data-gen-ignore.ts && bun ./dist/cli.js --input example/policy/data-gen-policy.ts --optional-properties omit --readonly-properties warn --index-signatures warn && bun ./dist/cli.js --input example/branded/data-gen-branded.ts && bun ./dist/cli.js --input example/enums/data-gen-enums.ts",
-    "test": "bun test"
+    "changeset:publish": "changeset publish"
   },
   "devDependencies": {
-    "@changesets/cli": "^2.29.7",
-    "@types/node": "^24.6.0"
-  },
-  "peerDependencies": {
-    "typescript": "^5.9.3"
-  },
-  "dependencies": {
-    "@faker-js/faker": "^10.3.0"
+    "@changesets/cli": "^2.29.7"
   }
 }

@@ -4,11 +4,20 @@
   "workspaces": {
     "": {
       "name": "gen-gen",
+      "devDependencies": {
+        "@changesets/cli": "^2.29.7",
+      },
+    },
+    "packages/gen-gen": {
+      "name": "gen-gen",
+      "version": "0.1.0",
+      "bin": {
+        "gen-gen": "./dist/cli.js",
+      },
       "dependencies": {
         "@faker-js/faker": "^10.3.0",
       },
       "devDependencies": {
-        "@changesets/cli": "^2.29.7",
         "@types/node": "^24.6.0",
       },
       "peerDependencies": {
@@ -390,6 +399,8 @@
     "fsevents": ["fsevents@2.3.3", "", { "os": "darwin" }, "sha512-5xoDfX+fL7faATnagmWPpbFtwh/R77WmMMqqHGS65C3vvB0YHrgF+B1YmZ3441tMj5n63k0212XNoJwzlhffQw=="],
 
     "function-bind": ["function-bind@1.1.2", "", {}, "sha512-7XHNxH7qX9xG5mIwxkhumTox/MIRNcOgDrxWsMt2pAr23WHp6MrRlN7FBSFpCpr+oVO0F744iUgR82nJMfG2SA=="],
+
+    "gen-gen": ["gen-gen@workspace:packages/gen-gen"],
 
     "gen-gen-website": ["gen-gen-website@workspace:website"],
 

@@ -1,5 +1,6 @@
 import {createFileRoute} from "@tanstack/react-router";
 
+import {CodeBlock} from "@/components/code-block";
 import {DocsArticle} from "@/components/docs-article";
 
 export const Route = createFileRoute("/docs/playground")({
@@ -32,8 +33,9 @@ function DocsPlaygroundPage() {
 
       <section className="space-y-3">
         <h2 className="text-xl font-semibold">Starter snippets</h2>
-        <pre className="overflow-auto rounded-md bg-muted p-3 text-sm">
-{`// 1) Basic object
+        <CodeBlock
+          language="ts"
+          code={`// 1) Basic object
 type User = { id: string; email: string };
 
 // 2) Union
@@ -42,7 +44,7 @@ type Contact = { kind: "email"; value: string } | { kind: "phone"; value: string
 // 3) Generic concrete type
 type ApiResponse<T> = { data: T; error?: string };
 type Concrete = ApiResponse<User>;`}
-        </pre>
+        />
       </section>
 
       <section className="space-y-3">

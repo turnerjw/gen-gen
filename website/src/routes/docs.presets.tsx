@@ -1,5 +1,6 @@
 import {createFileRoute} from "@tanstack/react-router";
 
+import {CodeBlock} from "@/components/code-block";
 import {DocsArticle} from "@/components/docs-article";
 
 export const Route = createFileRoute("/docs/presets")({
@@ -22,17 +23,18 @@ function DocsPresetsPage() {
 
       <section className="space-y-3">
         <h2 className="text-xl font-semibold">CLI</h2>
-        <pre className="overflow-auto rounded-md bg-muted p-3 text-sm">{`npx gen-gen --input data-gen.ts --preset common,commerce`}</pre>
+        <CodeBlock language="bash" code={`npx gen-gen --input data-gen.ts --preset common,commerce`} />
       </section>
 
       <section className="space-y-3">
         <h2 className="text-xl font-semibold">API / plugin</h2>
-        <pre className="overflow-auto rounded-md bg-muted p-3 text-sm">
-{`generateDataFile({
+        <CodeBlock
+          language="ts"
+          code={`generateDataFile({
   input: "data-gen.ts",
   typeMappingPresets: ["common", "commerce"],
 });`}
-        </pre>
+        />
       </section>
 
       <section className="space-y-3">

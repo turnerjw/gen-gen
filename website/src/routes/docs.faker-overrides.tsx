@@ -1,5 +1,6 @@
 import {createFileRoute} from "@tanstack/react-router";
 
+import {CodeBlock} from "@/components/code-block";
 import {DocsArticle} from "@/components/docs-article";
 
 export const Route = createFileRoute("/docs/faker-overrides")({
@@ -36,20 +37,20 @@ function DocsFakerOverridesPage() {
 
       <section className="space-y-3">
         <h2 className="text-xl font-semibold">CLI overrides</h2>
-        <pre className="overflow-auto rounded-md bg-muted p-3 text-sm">
-{`npx gen-gen --input data-gen.ts \\
+        <CodeBlock
+          language="bash"
+          code={`npx gen-gen --input data-gen.ts \\
   --faker-override email=faker.internet.email() \\
   --faker-override Pokemon.id=faker.number.int({min:10000,max:99999})`}
-        </pre>
+        />
       </section>
 
       <section className="space-y-3">
         <h2 className="text-xl font-semibold">Strategy module (CLI)</h2>
-        <pre className="overflow-auto rounded-md bg-muted p-3 text-sm">
-{`npx gen-gen --input data-gen.ts --faker-strategy ./faker-strategy.ts`}
-        </pre>
-        <pre className="overflow-auto rounded-md bg-muted p-3 text-sm">
-{`export default function fakerStrategy(ctx) {
+        <CodeBlock language="bash" code={`npx gen-gen --input data-gen.ts --faker-strategy ./faker-strategy.ts`} />
+        <CodeBlock
+          language="ts"
+          code={`export default function fakerStrategy(ctx) {
   if (ctx.rootTypeText === "User" && ctx.path === "id") {
     return {expression: "faker.string.uuid()", invokeMode: "raw"};
   }
@@ -58,7 +59,7 @@ function DocsFakerOverridesPage() {
   }
   return undefined;
 }`}
-        </pre>
+        />
       </section>
 
       <section className="space-y-3">

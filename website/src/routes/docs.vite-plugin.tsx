@@ -1,5 +1,6 @@
 import {createFileRoute} from "@tanstack/react-router";
 
+import {CodeBlock} from "@/components/code-block";
 import {DocsArticle} from "@/components/docs-article";
 
 export const Route = createFileRoute("/docs/vite-plugin")({
@@ -14,8 +15,9 @@ function DocsVitePluginPage() {
     >
       <section className="space-y-3">
         <h2 className="text-xl font-semibold">Setup</h2>
-        <pre className="overflow-auto rounded-md bg-muted p-3 text-sm">
-{`import {defineConfig} from "vite";
+        <CodeBlock
+          language="ts"
+          code={`import {defineConfig} from "vite";
 import {genGenPlugin} from "gen-gen";
 
 export default defineConfig({
@@ -32,7 +34,7 @@ export default defineConfig({
     }),
   ],
 });`}
-        </pre>
+        />
       </section>
 
       <section className="space-y-3">

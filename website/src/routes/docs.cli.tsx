@@ -1,5 +1,6 @@
 import {createFileRoute} from "@tanstack/react-router";
 
+import {CodeBlock} from "@/components/code-block";
 import {DocsArticle} from "@/components/docs-article";
 
 export const Route = createFileRoute("/docs/cli")({
@@ -11,7 +12,7 @@ function DocsCliPage() {
     <DocsArticle title="CLI Reference" summary="Complete command-line options, constraints, and copy-paste examples.">
       <section className="space-y-3">
         <h2 className="text-xl font-semibold">Usage</h2>
-        <pre className="overflow-auto rounded-md bg-muted p-3 text-sm">{`gen-gen [options]`}</pre>
+        <CodeBlock language="bash" code={`gen-gen [options]`} />
       </section>
 
       <section className="space-y-3">
@@ -38,8 +39,9 @@ function DocsCliPage() {
 
       <section className="space-y-3">
         <h2 className="text-xl font-semibold">Examples</h2>
-        <pre className="overflow-auto rounded-md bg-muted p-3 text-sm">
-{`# single run
+        <CodeBlock
+          language="bash"
+          code={`# single run
 npx gen-gen --input example/basic/data-gen.ts
 
 # stale-check in CI
@@ -53,7 +55,7 @@ npx gen-gen --input data-gen.ts --deep-merge --preset common,commerce --include 
 
 # explicit faker override(s)
 npx gen-gen --input data-gen.ts --faker-override email=faker.internet.email()`}
-        </pre>
+        />
       </section>
 
       <section className="space-y-3">

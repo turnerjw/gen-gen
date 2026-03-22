@@ -1,5 +1,6 @@
 import {createFileRoute} from "@tanstack/react-router";
 
+import {CodeBlock} from "@/components/code-block";
 import {DocsArticle} from "@/components/docs-article";
 
 export const Route = createFileRoute("/docs/advanced")({
@@ -15,13 +16,14 @@ function DocsAdvancedPage() {
       <section className="space-y-3">
         <h2 className="text-xl font-semibold">Deep merge vs shallow merge</h2>
         <p>Default generation applies shallow spread for overrides. Use `--deep-merge` to recursively merge nested objects.</p>
-        <pre className="overflow-auto rounded-md bg-muted p-3 text-sm">
-{`# shallow (default)
+        <CodeBlock
+          language="bash"
+          code={`# shallow (default)
 gen-gen --input data-gen.ts
 
 # deep merge
 gen-gen --input data-gen.ts --deep-merge`}
-        </pre>
+        />
       </section>
 
       <section className="space-y-3">
@@ -36,12 +38,13 @@ gen-gen --input data-gen.ts --deep-merge`}
       <section className="space-y-3">
         <h2 className="text-xl font-semibold">Helper ergonomics</h2>
         <p>Generated functions accept object overrides or callback overrides with nested helpers:</p>
-        <pre className="overflow-auto rounded-md bg-muted p-3 text-sm">
-{`const order = generateOrder(({generateCustomer, generateItemsItem}) => ({
+        <CodeBlock
+          language="ts"
+          code={`const order = generateOrder(({generateCustomer, generateItemsItem}) => ({
   customer: generateCustomer({email: "test@example.com"}),
   items: [generateItemsItem({quantity: 2})],
 }));`}
-        </pre>
+        />
         <ul className="list-disc space-y-1 pl-5">
           <li>`generateX` helper names map to nested object fields.</li>
           <li>`generateXItem` helper names map to object-array item fields (first mergeable object element template).</li>

@@ -1,5 +1,6 @@
 import {createFileRoute} from "@tanstack/react-router";
 
+import {CodeBlock} from "@/components/code-block";
 import {DocsArticle} from "@/components/docs-article";
 
 export const Route = createFileRoute("/docs/api")({
@@ -14,15 +15,14 @@ function DocsApiPage() {
     >
       <section className="space-y-3">
         <h2 className="text-xl font-semibold">Import</h2>
-        <pre className="overflow-auto rounded-md bg-muted p-3 text-sm">
-{`import {generateDataFile} from "gen-gen";`}
-        </pre>
+        <CodeBlock language="ts" code={`import {generateDataFile} from "gen-gen";`} />
       </section>
 
       <section className="space-y-3">
         <h2 className="text-xl font-semibold">GenerateOptions</h2>
-        <pre className="overflow-auto rounded-md bg-muted p-3 text-sm">
-{`interface GenerateOptions {
+        <CodeBlock
+          language="ts"
+          code={`interface GenerateOptions {
   input?: string;
   cwd?: string;
   markerText?: string;
@@ -40,26 +40,28 @@ function DocsApiPage() {
   fakerOverrides?: Record<string, string | ((faker) => unknown)>;
   fakerStrategy?: (ctx) => string | ((faker) => unknown) | {expression: string; invokeMode?: "raw" | "call" | "callWithFaker"} | undefined;
 }`}
-        </pre>
+        />
       </section>
 
       <section className="space-y-3">
         <h2 className="text-xl font-semibold">GenerateResult</h2>
-        <pre className="overflow-auto rounded-md bg-muted p-3 text-sm">
-{`interface GenerateResult {
+        <CodeBlock
+          language="ts"
+          code={`interface GenerateResult {
   inputPath: string;
   changed: boolean;
   content: string;
   watchedFiles: string[];
   warnings: string[];
 }`}
-        </pre>
+        />
       </section>
 
       <section className="space-y-3">
         <h2 className="text-xl font-semibold">Example</h2>
-        <pre className="overflow-auto rounded-md bg-muted p-3 text-sm">
-{`const result = await generateDataFile({
+        <CodeBlock
+          language="ts"
+          code={`const result = await generateDataFile({
   input: "data-gen.ts",
   write: false,
   typeMappingPresets: ["common"],
@@ -74,7 +76,7 @@ function DocsApiPage() {
 if (result.warnings.length > 0) {
   console.warn(result.warnings.join("\n"));
 }`}
-        </pre>
+        />
       </section>
     </DocsArticle>
   );

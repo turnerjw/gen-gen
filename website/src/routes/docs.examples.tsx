@@ -1,5 +1,6 @@
 import {createFileRoute} from "@tanstack/react-router";
 
+import {CodeBlock} from "@/components/code-block";
 import {DocsArticle} from "@/components/docs-article";
 
 export const Route = createFileRoute("/docs/examples")({
@@ -30,17 +31,18 @@ function DocsExamplesPage() {
 
       <section className="space-y-3">
         <h2 className="text-xl font-semibold">Generate all examples</h2>
-        <pre className="overflow-auto rounded-md bg-muted p-3 text-sm">{`bun run gen:example`}</pre>
+        <CodeBlock language="bash" code={`bun run gen:example`} />
       </section>
 
       <section className="space-y-3">
         <h2 className="text-xl font-semibold">Targeted commands</h2>
-        <pre className="overflow-auto rounded-md bg-muted p-3 text-sm">
-{`bun ./dist/cli.js --input example/basic/data-gen.ts
+        <CodeBlock
+          language="bash"
+          code={`bun ./dist/cli.js --input example/basic/data-gen.ts
 bun ./dist/cli.js --input example/unions/data-gen-unions.ts
 bun ./dist/cli.js --input example/deep-merge/data-gen-deep-merge.ts --deep-merge
 bun ./dist/cli.js --input example/custom-faker/data-gen-custom-faker.ts --faker-override email=faker.internet.email()`}
-        </pre>
+        />
       </section>
     </DocsArticle>
   );

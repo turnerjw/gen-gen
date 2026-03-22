@@ -105,16 +105,22 @@ export async function generateDataFile(options: GenerateOptions = {}): Promise<G
     exclude: options.exclude ?? [],
     fakerOverrides: options.fakerOverrides ?? {},
   });
+  const fileConfig = parsed.genGenConfig;
+  const mergedDeepMerge = options.deepMerge ?? fileConfig.deepMerge ?? true;
+  const mergedPropertyPolicy = resolvePropertyPolicy({
+    ...fileConfig,
+    ...options.propertyPolicy,
+  });
   const fakerStrategy = options.fakerStrategy ?? parsed.fakerStrategy;
   const emitted = emitFunctions(
     parsed.targets,
     parsed.checker,
     parsed.sourceFile,
-    options.deepMerge ?? true,
+    mergedDeepMerge,
     parsed.fakerOverrides,
     fakerStrategy,
     options.typeMappingPresets ?? [],
-    resolvePropertyPolicy(options.propertyPolicy),
+    mergedPropertyPolicy,
   );
   const warnings = [
     ...parsed.warnings,
@@ -168,6 +174,7 @@ function parseTargets(
   watchedFiles: string[];
   fakerOverrides: Map<string, FakerOverrideSpec>;
   fakerStrategy: FakerStrategyHook | undefined;
+  genGenConfig: Partial<GenGenConfigOptions>;
 } {
   const compilerOptions: ts.CompilerOptions = {
     target: ts.ScriptTarget.ESNext,
@@ -237,6 +244,7 @@ function parseTargets(
     .filter((fileName) => !fileName.includes("/node_modules/") && !fileName.endsWith(".d.ts"));
 
   const fakerStrategy = collectFakerStrategy(sourceFile);
+  const genGenConfig = collectGenGenConfig(sourceFile);
 
   return {
     sourceFile,
@@ -246,7 +254,44 @@ function parseTargets(
     watchedFiles,
     fakerOverrides,
     fakerStrategy,
+    genGenConfig,
   };
+}
+
+function collectGenGenConfig(sourceFile: ts.SourceFile): Partial<GenGenConfigOptions> {
+  for (const statement of sourceFile.statements) {
+    if (
+      ts.isVariableStatement(statement) &&
+      statement.declarationList.declarations.length === 1
+    ) {
+      const decl = statement.declarationList.declarations[0]!;
+      if (
+        ts.isIdentifier(decl.name) &&
+        decl.name.text === "GenGenConfig" &&
+        decl.initializer
+      ) {
+        // Unwrap `as const` if present
+        let init = decl.initializer;
+        if (ts.isAsExpression(init)) init = init.expression;
+
+        if (ts.isObjectLiteralExpression(init)) {
+          const config: Partial<GenGenConfigOptions> = {};
+          for (const prop of init.properties) {
+            if (!ts.isPropertyAssignment(prop) || !ts.isIdentifier(prop.name)) continue;
+            const key = prop.name.text;
+            const val = prop.initializer;
+            if (key === "deepMerge" && (val.kind === ts.SyntaxKind.TrueKeyword || val.kind === ts.SyntaxKind.FalseKeyword)) {
+              config.deepMerge = val.kind === ts.SyntaxKind.TrueKeyword;
+            } else if ((key === "optionalProperties" || key === "indexSignatures") && ts.isStringLiteral(val)) {
+              (config as Record<string, unknown>)[key] = val.text;
+            }
+          }
+          return config;
+        }
+      }
+    }
+  }
+  return {};
 }
 
 function collectImportedTargets(

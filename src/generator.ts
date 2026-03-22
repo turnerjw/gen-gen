@@ -79,6 +79,7 @@ interface GenerationContext {
   typeTextCache: WeakMap<ts.Type, string>;
   propertiesCache: WeakMap<ts.Type, ts.Symbol[]>;
   enumValuesCache: WeakMap<ts.Type, string[] | null>;
+  collectedPaths: Set<string>;
 }
 
 const DEFAULT_INPUT = "data-gen.ts";
@@ -645,15 +646,48 @@ function emitFunctions(
     typeTextCache: new WeakMap(),
     propertiesCache: new WeakMap(),
     enumValuesCache: new WeakMap(),
+    collectedPaths: new Set<string>(),
   };
 
   const sections: string[] = [emitSharedHelperRuntime(deepMerge)];
   sections.push(...targets.map((target) => emitFunction(target, context)));
+
+  const overridePathsType = emitFakerOverridePaths(context.collectedPaths);
+
   return {
-    content: sections.join("\n\n"),
+    content: [overridePathsType, ...sections].join("\n\n"),
     usedFakerOverrideKeys: context.usedFakerOverrideKeys,
     warnings: [...context.emittedWarnings],
   };
+}
+
+function emitFakerOverridePaths(paths: Set<string>): string {
+  const sorted = [...paths].sort();
+
+  if (sorted.length === 0) {
+    return [
+      "export type FakerOverridePaths = never;",
+      "",
+      "export type TypedFakerOverrides = {",
+      "  [K in FakerOverridePaths | (string & {})]?: ((...args: any[]) => unknown) | string;",
+      "};",
+    ].join("\n");
+  }
+
+  const unionLines = sorted.map((p, i) => {
+    const prefix = i === 0 ? "  | " : "  | ";
+    return `${prefix}${JSON.stringify(p)}`;
+  });
+
+  return [
+    "export type FakerOverridePaths =",
+    ...unionLines,
+    ";",
+    "",
+    "export type TypedFakerOverrides = {",
+    "  [K in FakerOverridePaths | (string & {})]?: ((...args: any[]) => unknown) | string;",
+    "};",
+  ].join("\n");
 }
 
 function emitFunction(target: TargetSpec, context: GenerationContext): string {
@@ -841,6 +875,11 @@ function emitExpression(
 ): string {
   const checker = context.checker;
   const normalizedTypeText = getTypeText(type, context);
+
+  // Collect path for FakerOverridePaths type generation
+  if (propertyPath.length > 0) {
+    context.collectedPaths.add(`${rootTypeText}.${propertyPath.join(".")}`);
+  }
 
   const override = resolveFakerOverride(context, {
     rootTypeText,

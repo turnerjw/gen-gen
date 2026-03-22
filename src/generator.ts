@@ -52,6 +52,12 @@ export interface PropertyPolicy {
   indexSignatures: "ignore" | "warn";
 }
 
+export interface GenGenConfigOptions {
+  deepMerge?: boolean;
+  optionalProperties?: "include" | "omit";
+  indexSignatures?: "ignore" | "warn";
+}
+
 interface TargetSpec {
   functionName: string;
   typeText: string;

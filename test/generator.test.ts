@@ -928,6 +928,50 @@ import type { Cart } from "./types";
     expect(value.items[0]?.sku).toEqual(expect.any(String));
   });
 
+  test("supports plural array-item helpers generateXxxItems(count, overrides?)", async () => {
+    const cwd = await createFixture({
+      "types.ts": `
+export type BlogPost = {
+  tags: {
+    name: string;
+    slug: string;
+  }[];
+};
+`,
+      "data-gen.ts": `
+import type { BlogPost } from "./types";
+
+/**
+ * Generated below - DO NOT EDIT
+ */
+`,
+    });
+
+    const result = await generateDataFile({cwd, write: true});
+    expect(result.content).toContain("generate${Capitalize<string & K>}Items");
+    expect(result.content).toContain("arrayItemsHelperName");
+
+    const moduleUrl = `${pathToFileURL(path.join(cwd, "data-gen.ts")).href}?t=${Date.now()}`;
+    const generatedModule = (await import(moduleUrl)) as {
+      generateBlogPost(
+        overrides?: (helpers: {
+          generateTagsItem: (overrides?: {name?: string; slug?: string}) => {name: string; slug: string};
+          generateTagsItems: (count: number, overrides?: {name?: string; slug?: string}) => {name: string; slug: string}[];
+        }) => {
+          tags?: Array<{name: string; slug: string}>;
+        },
+      ): {tags: Array<{name: string; slug: string}>};
+    };
+
+    const value = generatedModule.generateBlogPost(({generateTagsItems}) => ({
+      tags: generateTagsItems(3),
+    }));
+
+    expect(value.tags).toHaveLength(3);
+    expect(value.tags[0]?.name).toEqual(expect.any(String));
+    expect(value.tags[0]?.slug).toEqual(expect.any(String));
+  });
+
   test("generates mixed unions by sampling across all concrete members", async () => {
     const cwd = await createFixture({
       "types.ts": `

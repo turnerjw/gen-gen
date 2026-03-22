@@ -10,12 +10,10 @@ import {
 
 export interface GenGenPluginOptions {
   input?: string;
-  markerText?: string;
   failOnWarn?: boolean;
   propertyPolicy?: Partial<PropertyPolicy>;
   deepMerge?: boolean;
   typeMappingPresets?: TypeMappingPresetName[];
-  watchDiagnostics?: boolean;
   include?: string[];
   exclude?: string[];
   fakerOverrides?: Record<string, FakerOverrideInput>;
@@ -39,7 +37,6 @@ interface PluginDeps {
   generate(options: {
     input?: string;
     cwd?: string;
-    markerText?: string;
     write?: boolean;
     failOnWarn?: boolean;
     propertyPolicy?: Partial<PropertyPolicy>;
@@ -77,7 +74,6 @@ export function createGenGenPlugin(options: GenGenPluginOptions = {}, deps: Plug
     const result = await deps.generate({
       input: options.input,
       cwd: root,
-      markerText: options.markerText,
       write,
       failOnWarn: options.failOnWarn,
       propertyPolicy: options.propertyPolicy,
@@ -98,7 +94,7 @@ export function createGenGenPlugin(options: GenGenPluginOptions = {}, deps: Plug
       deps.warn(`[gen-gen] ${warning}`);
     }
 
-    if (options.watchDiagnostics) {
+    if (process.env.GEN_GEN_WATCH_DIAGNOSTICS === "1") {
       if (triggerFile) {
         deps.warn(`[gen-gen] vite watch trigger: ${path.resolve(triggerFile)}`);
       }

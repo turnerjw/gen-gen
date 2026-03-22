@@ -16,7 +16,6 @@ function baseOptions(): CliOptions {
     optionalProperties: "include",
     indexSignatures: "ignore",
     typeMappingPresets: [],
-    watchDiagnostics: false,
     watch: true,
     deepMerge: false,
     include: [],
@@ -205,11 +204,9 @@ describe("watch mode runtime", () => {
     const logs: string[] = [];
     const listeners = new Map<string, () => void>();
 
+    process.env.GEN_GEN_WATCH_DIAGNOSTICS = "1";
     const runtime = createWatchModeRuntime(
-      {
-        ...baseOptions(),
-        watchDiagnostics: true,
-      },
+      baseOptions(),
       {
         watch(file, listener): WatchHandle {
           listeners.set(path.resolve(file), listener);
@@ -242,5 +239,6 @@ describe("watch mode runtime", () => {
     expect(logs.some((message) => message.includes("watch run #2 metrics"))).toBeTrue();
     expect(logs.some((message) => message.includes("watch trigger:"))).toBeTrue();
     runtime.closeWatchers();
+    delete process.env.GEN_GEN_WATCH_DIAGNOSTICS;
   });
 });

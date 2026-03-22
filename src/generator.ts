@@ -74,6 +74,7 @@ interface GenerationContext {
   fakerStrategy?: FakerStrategyHook;
   typeMappingPresets: TypeMappingPresetName[];
   usedFakerOverrideKeys: Set<string>;
+  allVisitedFakerKeys: Map<string, string>;
   policy: PropertyPolicy;
   emittedWarnings: Set<string>;
   typeTextCache: WeakMap<ts.Type, string>;
@@ -114,7 +115,7 @@ export async function generateDataFile(options: GenerateOptions = {}): Promise<G
   const warnings = [
     ...parsed.warnings,
     ...emitted.warnings,
-    ...collectUnusedFakerOverrideWarnings(parsed.fakerOverrides, emitted.usedFakerOverrideKeys),
+    ...collectUnusedFakerOverrideWarnings(parsed.fakerOverrides, emitted.usedFakerOverrideKeys, emitted.allVisitedFakerKeys),
   ];
   if (options.failOnWarn && warnings.length > 0) {
     throw new Error(buildFailOnWarnMessage(warnings));
@@ -621,6 +622,7 @@ function emitFunctions(
 ): {
   content: string;
   usedFakerOverrideKeys: Set<string>;
+  allVisitedFakerKeys: Map<string, string>;
   warnings: string[];
 } {
   const typeToFunctionName = new Map<string, string>();
@@ -640,6 +642,7 @@ function emitFunctions(
     fakerStrategy,
     typeMappingPresets,
     usedFakerOverrideKeys: new Set<string>(),
+    allVisitedFakerKeys: new Map<string, string>(),
     policy,
     emittedWarnings: new Set<string>(),
     typeTextCache: new WeakMap(),
@@ -652,6 +655,7 @@ function emitFunctions(
   return {
     content: sections.join("\n\n"),
     usedFakerOverrideKeys: context.usedFakerOverrideKeys,
+    allVisitedFakerKeys: context.allVisitedFakerKeys,
     warnings: [...context.emittedWarnings],
   };
 }
@@ -1325,19 +1329,22 @@ function resolveFakerOverride(
   },
 ): FakerOverrideSpec | undefined {
   const path = value.propertyPath.join(".");
-  const keys = [
-    normalizeFilterKey(`${value.rootTypeText}.${path}`),
-    normalizeFilterKey(path),
-    normalizeFilterKey(value.propertyPath[value.propertyPath.length - 1] ?? ""),
-    normalizeFilterKey(value.declaredTypeText ?? ""),
-    normalizeFilterKey(value.aliasTypeText ?? ""),
-    normalizeFilterKey(value.typeText),
+  const rawKeys = [
+    `${value.rootTypeText}.${path}`,
+    path,
+    value.propertyPath[value.propertyPath.length - 1] ?? "",
+    value.declaredTypeText ?? "",
+    value.aliasTypeText ?? "",
+    value.typeText,
   ].filter((key) => key.length > 0);
 
-  for (const key of keys) {
-    const override = context.fakerOverrides.get(key);
+  const keys = rawKeys.map((raw) => ({raw, normalized: normalizeFilterKey(raw)})).filter(({normalized}) => normalized.length > 0);
+
+  for (const {raw, normalized} of keys) {
+    context.allVisitedFakerKeys.set(normalized, raw);
+    const override = context.fakerOverrides.get(normalized);
     if (override) {
-      context.usedFakerOverrideKeys.add(key);
+      context.usedFakerOverrideKeys.add(normalized);
       return override;
     }
   }
@@ -1525,18 +1532,61 @@ function collectUnmatchedFilterWarnings(filterResult: {
   return warnings;
 }
 
+function levenshtein(a: string, b: string): number {
+  const dp: number[][] = Array.from({length: a.length + 1}, (_, i) =>
+    Array.from({length: b.length + 1}, (_, j) => (i === 0 ? j : j === 0 ? i : 0)),
+  );
+  for (let i = 1; i <= a.length; i++) {
+    for (let j = 1; j <= b.length; j++) {
+      const diag = dp[i - 1]![j - 1]!;
+      const del = dp[i - 1]![j]!;
+      const ins = dp[i]![j - 1]!;
+      dp[i]![j] = a[i - 1] === b[j - 1] ? diag : 1 + Math.min(del, ins, diag);
+    }
+  }
+  return dp[a.length]![b.length]!;
+}
+
+function findNearestMatch(key: string, candidates: string[]): string | undefined {
+  if (candidates.length === 0) return undefined;
+
+  // Check for substring matches first
+  const substringMatch = candidates.find((c) => c.includes(key) || key.includes(c));
+  if (substringMatch) return substringMatch;
+
+  // Use Levenshtein distance
+  let bestMatch: string | undefined;
+  let bestDistance = Infinity;
+  for (const candidate of candidates) {
+    const dist = levenshtein(key, candidate);
+    if (dist < bestDistance) {
+      bestDistance = dist;
+      bestMatch = candidate;
+    }
+  }
+
+  const threshold = Math.min(3, Math.floor(key.length / 3));
+  return bestDistance <= threshold ? bestMatch : undefined;
+}
+
 function collectUnusedFakerOverrideWarnings(
   overrides: Map<string, FakerOverrideSpec>,
   usedOverrideKeys: Set<string>,
+  allVisitedKeys: Map<string, string>,
 ): string[] {
-  const unused = [...overrides.entries()]
-    .filter(([key]) => !usedOverrideKeys.has(key))
-    .map(([, spec]) => spec.sourceKey);
-  if (unused.length === 0) {
+  const unusedEntries = [...overrides.entries()].filter(([key]) => !usedOverrideKeys.has(key));
+  if (unusedEntries.length === 0) {
     return [];
   }
 
-  return [`Unused faker overrides: ${unused.join(", ")}`];
+  // Use normalized keys for matching, but display original-cased suggestions
+  const normalizedCandidates = [...allVisitedKeys.keys()];
+  return unusedEntries.map(([key, spec]) => {
+    const matchedNormalized = findNearestMatch(key, normalizedCandidates);
+    const suggestion = matchedNormalized !== undefined ? allVisitedKeys.get(matchedNormalized) : undefined;
+    const base = `Unused faker overrides: ${spec.sourceKey}`;
+    return suggestion ? `${base}. Did you mean '${suggestion}'?` : base;
+  });
 }
 
 function getDeclaredTypeText(declaration: ts.Node, sourceFile: ts.SourceFile): string | undefined {

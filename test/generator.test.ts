@@ -608,6 +608,68 @@ import type { User } from "./types";
     expect(result.content).toContain("export function generateUser(");
   });
 
+  test("unused faker override with typo suggests nearest match", async () => {
+    const cwd = await createFixture({
+      "types.ts": `
+export type User = {
+  email: string;
+  name: string;
+};
+`,
+      "data-gen.ts": `
+import type { User } from "./types";
+
+/**
+ * Generated below - DO NOT EDIT
+ */
+`,
+    });
+
+    const result = await generateDataFile({
+      cwd,
+      write: false,
+      fakerOverrides: {
+        "User.emial": "faker.internet.email()",
+      },
+    });
+
+    const warning = result.warnings.find((w) => w.includes("User.emial"));
+    expect(warning).toBeDefined();
+    expect(warning).toContain("Did you mean");
+    expect(warning).toContain("User.email");
+  });
+
+  test("unused faker override with completely wrong key produces no suggestion", async () => {
+    const cwd = await createFixture({
+      "types.ts": `
+export type User = {
+  email: string;
+  name: string;
+};
+`,
+      "data-gen.ts": `
+import type { User } from "./types";
+
+/**
+ * Generated below - DO NOT EDIT
+ */
+`,
+    });
+
+    const result = await generateDataFile({
+      cwd,
+      write: false,
+      fakerOverrides: {
+        "User.email": "faker.internet.email()",
+        "CompletelyUnrelated.xyzzy": "faker.word.noun()",
+      },
+    });
+
+    const warning = result.warnings.find((w) => w.includes("CompletelyUnrelated.xyzzy"));
+    expect(warning).toBeDefined();
+    expect(warning).not.toContain("Did you mean");
+  });
+
   test("failOnWarn throws when warnings are emitted", async () => {
     const cwd = await createFixture({
       "types.ts": `

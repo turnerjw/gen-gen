@@ -436,6 +436,19 @@ function extractFunctionOverrideSpec(
           invokeMode: "raw",
         };
       }
+      if (ts.isBlock(expression.body)) {
+        const statements = expression.body.statements;
+        const firstStatement = statements[0];
+        if (statements.length === 1 && firstStatement && ts.isReturnStatement(firstStatement)) {
+          const returnExpr = firstStatement.expression;
+          if (returnExpr) {
+            return {
+              expression: returnExpr.getText(sourceFile),
+              invokeMode: "raw",
+            };
+          }
+        }
+      }
       if (ts.isExpression(expression.body)) {
         return {
           expression: expression.body.getText(sourceFile),
@@ -467,6 +480,13 @@ function extractFunctionOverrideSpec(
     return {
       expression: expression.getText(sourceFile),
       invokeMode: expression.parameters.length > 0 ? "callWithFaker" : "call",
+    };
+  }
+
+  if (ts.isPropertyAccessExpression(expression) || ts.isElementAccessExpression(expression)) {
+    return {
+      expression: `${expression.getText(sourceFile)}()`,
+      invokeMode: "raw",
     };
   }
 

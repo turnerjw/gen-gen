@@ -1257,4 +1257,109 @@ const FakerStrategy = (ctx) => {
     expect(result.content).toContain("id: faker.string.alphanumeric(12)");
     expect(result.content).not.toContain("id: faker.string.uuid()");
   });
+
+  test("GenGenConfig in data-gen file sets optionalProperties to omit", async () => {
+    const cwd = await createFixture({
+      "types.ts": `
+export type Item = { id: number; name: string; description?: string };
+`,
+      "data-gen.ts": `
+import type { Item } from "./types";
+
+const GenGenConfig = {
+  optionalProperties: "omit",
+} as const;
+
+/**
+ * Generated below - DO NOT EDIT
+ */
+`,
+    });
+
+    const result = await generateDataFile({cwd, write: false});
+
+    expect(result.content).toContain("export function generateItem(");
+    expect(result.content).toContain("id:");
+    expect(result.content).toContain("name:");
+    expect(result.content).not.toContain("description:");
+  });
+
+  test("GenGenConfig in data-gen file sets deepMerge to false", async () => {
+    const cwd = await createFixture({
+      "types.ts": `
+export type Nested = { a: string; b: { c: number } };
+`,
+      "data-gen.ts": `
+import type { Nested } from "./types";
+
+const GenGenConfig = {
+  deepMerge: false,
+} as const;
+
+/**
+ * Generated below - DO NOT EDIT
+ */
+`,
+    });
+
+    const result = await generateDataFile({cwd, write: false});
+
+    expect(result.content).toContain("export function generateNested(");
+    // When deepMerge is false, the generator uses shallow spread instead of __genGenMergeDeep
+    expect(result.content).toContain("return { ...base, ...resolvedOverrides };");
+    expect(result.content).not.toContain("return __genGenMergeDeep(base, resolvedOverrides);");
+  });
+
+  test("API-level options override GenGenConfig in data-gen file", async () => {
+    const cwd = await createFixture({
+      "types.ts": `
+export type Item = { id: number; name: string; description?: string };
+`,
+      "data-gen.ts": `
+import type { Item } from "./types";
+
+const GenGenConfig = {
+  optionalProperties: "omit",
+} as const;
+
+/**
+ * Generated below - DO NOT EDIT
+ */
+`,
+    });
+
+    // API-level override: include optional properties despite file config saying omit
+    const result = await generateDataFile({
+      cwd,
+      write: false,
+      propertyPolicy: {optionalProperties: "include"},
+    });
+
+    expect(result.content).toContain("export function generateItem(");
+    expect(result.content).toContain("description:");
+  });
+
+  test("GenGenConfig deepMerge=true from file enables deep merge helper", async () => {
+    const cwd = await createFixture({
+      "types.ts": `
+export type Nested = { a: string; b: { c: number } };
+`,
+      "data-gen.ts": `
+import type { Nested } from "./types";
+
+const GenGenConfig = {
+  deepMerge: true,
+} as const;
+
+/**
+ * Generated below - DO NOT EDIT
+ */
+`,
+    });
+
+    const result = await generateDataFile({cwd, write: false});
+
+    expect(result.content).toContain("function __genGenMergeDeep<T>(base: T, overrides: Partial<T> | undefined): T {");
+    expect(result.content).toContain("return __genGenMergeDeep(base, resolvedOverrides);")
+  });
 });

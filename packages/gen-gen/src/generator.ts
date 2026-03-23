@@ -7,6 +7,7 @@ export interface GenerateOptions {
   cwd?: string;
   write?: boolean;
   failOnWarn?: boolean;
+  languageService?: ts.LanguageService;
 }
 
 export type FakerOverrideInput = string | ((faker: typeof import("@faker-js/faker").faker) => unknown);
@@ -90,7 +91,7 @@ export async function generateDataFile(options: GenerateOptions = {}): Promise<G
   const write = options.write ?? true;
 
   const original = await fs.readFile(inputPath, "utf8");
-  const parsed = parseTargets(inputPath);
+  const parsed = parseTargets(inputPath, options.languageService);
   const fileConfig = parsed.genGenConfig;
   const mergedDeepMerge = fileConfig.deepMerge ?? true;
   const mergedPropertyPolicy = resolvePropertyPolicy(fileConfig);
@@ -143,6 +144,7 @@ function resolvePropertyPolicy(policy: Partial<PropertyPolicy> | undefined): Pro
 
 function parseTargets(
   inputPath: string,
+  languageService?: ts.LanguageService,
 ): {
   sourceFile: ts.SourceFile;
   checker: ts.TypeChecker;
@@ -163,7 +165,9 @@ function parseTargets(
     noEmit: true,
   };
 
-  const program = ts.createProgram([inputPath], compilerOptions);
+  const program = languageService
+    ? languageService.getProgram()!
+    : ts.createProgram([inputPath], compilerOptions);
   const sourceFile = program.getSourceFile(inputPath);
   if (!sourceFile) {
     throw new Error(`Unable to load source file: ${inputPath}`);

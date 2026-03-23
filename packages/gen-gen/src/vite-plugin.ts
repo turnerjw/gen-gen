@@ -1,4 +1,6 @@
+import fs from "node:fs";
 import path from "node:path";
+import ts from "typescript";
 import {
   generateDataFile,
   type GenerateResult,
@@ -33,27 +35,66 @@ interface PluginDeps {
   error(message: string, error: unknown): void;
 }
 
-const defaultPluginDeps: PluginDeps = {
-  generate(options) {
-    return generateDataFile(options);
-  },
-  warn(message) {
-    console.warn(message);
-  },
-  error(message, error) {
-    console.error(message, error);
-  },
-};
+function createPluginLanguageService(inputPath: string, cwd: string): ts.LanguageService {
+  const compilerOptions: ts.CompilerOptions = {
+    target: ts.ScriptTarget.ESNext,
+    module: ts.ModuleKind.ESNext,
+    moduleResolution: ts.ModuleResolutionKind.Bundler,
+    allowJs: true,
+    skipLibCheck: true,
+    strict: true,
+    noEmit: true,
+  };
+  const fileVersions = new Map<string, number>();
+  const serviceHost: ts.LanguageServiceHost = {
+    getScriptFileNames: () => [inputPath],
+    getScriptVersion: (f) => String(fileVersions.get(f) ?? 0),
+    getScriptSnapshot: (f) => {
+      if (!ts.sys.fileExists(f)) return undefined;
+      return ts.ScriptSnapshot.fromString(fs.readFileSync(f, "utf8"));
+    },
+    getCurrentDirectory: () => cwd,
+    getCompilationSettings: () => compilerOptions,
+    getDefaultLibFileName: ts.getDefaultLibFilePath,
+    fileExists: ts.sys.fileExists,
+    readFile: ts.sys.readFile,
+    readDirectory: ts.sys.readDirectory,
+  };
+  return ts.createLanguageService(serviceHost);
+}
 
-export function createGenGenPlugin(options: GenGenPluginOptions = {}, deps: PluginDeps = defaultPluginDeps) {
+export function createGenGenPlugin(options: GenGenPluginOptions = {}, deps?: PluginDeps) {
   let root = process.cwd();
   const watchedFiles = new Set<string>();
   let watchRunCount = 0;
+  let languageService: ts.LanguageService | undefined;
+
+  function getLanguageService(): ts.LanguageService {
+    if (!languageService) {
+      const inputPath = path.resolve(root, options.input ?? "data-gen.ts");
+      languageService = createPluginLanguageService(inputPath, root);
+    }
+    return languageService;
+  }
+
+  const defaultDeps: PluginDeps = {
+    generate(opts) {
+      return generateDataFile({...opts, languageService: getLanguageService()});
+    },
+    warn(message) {
+      console.warn(message);
+    },
+    error(message, error) {
+      console.error(message, error);
+    },
+  };
+
+  const resolvedDeps = deps ?? defaultDeps;
 
   async function runGeneration(write: boolean, triggerFile?: string): Promise<GenerateResult> {
     watchRunCount += 1;
     const startedAt = Date.now();
-    const result = await deps.generate({
+    const result = await resolvedDeps.generate({
       input: options.input,
       cwd: root,
       write,
@@ -66,15 +107,15 @@ export function createGenGenPlugin(options: GenGenPluginOptions = {}, deps: Plug
     }
 
     for (const warning of result.warnings) {
-      deps.warn(`[gen-gen] ${warning}`);
+      resolvedDeps.warn(`[gen-gen] ${warning}`);
     }
 
     if (process.env.GEN_GEN_WATCH_DIAGNOSTICS === "1") {
       if (triggerFile) {
-        deps.warn(`[gen-gen] vite watch trigger: ${path.resolve(triggerFile)}`);
+        resolvedDeps.warn(`[gen-gen] vite watch trigger: ${path.resolve(triggerFile)}`);
       }
       const elapsedMs = Date.now() - startedAt;
-      deps.warn(
+      resolvedDeps.warn(
         `[gen-gen] vite watch run #${watchRunCount} metrics: ${elapsedMs}ms, changed=${result.changed}, warnings=${result.warnings.length}, watched=${result.watchedFiles.length}`,
       );
     }
@@ -108,7 +149,7 @@ export function createGenGenPlugin(options: GenGenPluginOptions = {}, deps: Plug
             server.ws.send({type: "full-reload"});
           }
         } catch (error) {
-          deps.error("[gen-gen] generation failed during watch", error);
+          resolvedDeps.error("[gen-gen] generation failed during watch", error);
         }
       });
     },

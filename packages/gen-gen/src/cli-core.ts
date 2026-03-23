@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
+import ts from "typescript";
 import {
   generateDataFile,
   type GenerateResult,
@@ -237,8 +238,45 @@ export function createWatchModeRuntime(
   };
 }
 
+function createWatchLanguageService(options: CliOptions): ts.LanguageService {
+  const cwd = options.cwd ?? process.cwd();
+  const inputPath = path.resolve(cwd, options.input ?? "data-gen.ts");
+  const compilerOptions: ts.CompilerOptions = {
+    target: ts.ScriptTarget.ESNext,
+    module: ts.ModuleKind.ESNext,
+    moduleResolution: ts.ModuleResolutionKind.Bundler,
+    allowJs: true,
+    skipLibCheck: true,
+    strict: true,
+    noEmit: true,
+  };
+  const fileVersions = new Map<string, number>();
+  const serviceHost: ts.LanguageServiceHost = {
+    getScriptFileNames: () => [inputPath],
+    getScriptVersion: (f) => String(fileVersions.get(f) ?? 0),
+    getScriptSnapshot: (f) => {
+      if (!ts.sys.fileExists(f)) return undefined;
+      return ts.ScriptSnapshot.fromString(fs.readFileSync(f, "utf8"));
+    },
+    getCurrentDirectory: () => cwd,
+    getCompilationSettings: () => compilerOptions,
+    getDefaultLibFileName: ts.getDefaultLibFilePath,
+    fileExists: ts.sys.fileExists,
+    readFile: ts.sys.readFile,
+    readDirectory: ts.sys.readDirectory,
+  };
+  return ts.createLanguageService(serviceHost);
+}
+
 export async function runWatchMode(options: CliOptions): Promise<void> {
-  const runtime = createWatchModeRuntime(options, defaultWatchDeps);
+  const languageService = createWatchLanguageService(options);
+  const watchDeps: typeof defaultWatchDeps = {
+    ...defaultWatchDeps,
+    generate(opts) {
+      return generateDataFile({...opts, languageService});
+    },
+  };
+  const runtime = createWatchModeRuntime(options, watchDeps);
 
   process.on("SIGINT", () => {
     runtime.closeWatchers();

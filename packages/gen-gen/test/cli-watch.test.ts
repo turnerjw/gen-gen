@@ -13,13 +13,7 @@ function baseOptions(): CliOptions {
     check: false,
     dryRun: false,
     failOnWarn: false,
-    optionalProperties: "include",
-    indexSignatures: "ignore",
     watch: true,
-    deepMerge: false,
-    include: [],
-    exclude: [],
-    fakerOverrides: {},
   };
 }
 
@@ -163,41 +157,6 @@ describe("watch mode runtime", () => {
     runtime.closeWatchers();
   });
 
-  test("watches faker strategy module file in watch mode", async () => {
-    const watchedFiles = new Set<string>();
-    const runtime = createWatchModeRuntime(
-      {
-        ...baseOptions(),
-        cwd: "/tmp/project",
-        fakerStrategyModule: "./strategy.ts",
-      },
-      {
-        watch(file, listener): WatchHandle {
-          watchedFiles.add(path.resolve(file));
-          return {
-            close() {},
-          };
-        },
-        async generate() {
-          return createResult("/tmp/data-gen.ts", ["/tmp/project/example.ts"]);
-        },
-        log() {},
-        warn() {},
-        error() {},
-        setTimer(callback, delayMs) {
-          return setTimeout(callback, delayMs);
-        },
-        clearTimer(timer) {
-          clearTimeout(timer);
-        },
-      },
-    );
-
-    await runtime.run();
-    expect(watchedFiles.has(path.resolve("/tmp/project/example.ts"))).toBeTrue();
-    expect(watchedFiles.has(path.resolve("/tmp/project/strategy.ts"))).toBeTrue();
-    runtime.closeWatchers();
-  });
 
   test("emits watch diagnostics logs when enabled", async () => {
     const logs: string[] = [];

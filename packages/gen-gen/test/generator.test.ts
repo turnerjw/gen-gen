@@ -117,13 +117,17 @@ export type Deep = {
       "data-gen.ts": `
 import type { Deep } from "./types";
 
+const GenGenConfig = {
+  deepMerge: true,
+} as const;
+
 /**
  * Generated below - DO NOT EDIT
  */
 `,
     });
 
-    const result = await generateDataFile({cwd, write: true, deepMerge: true});
+    const result = await generateDataFile({cwd, write: true});
     expect(result.content).toContain("function __genGenMergeDeep<T>(base: T, overrides: Partial<T> | undefined): T {");
     expect(result.content).toContain("return __genGenMergeDeep(base, resolvedOverrides);");
 
@@ -315,7 +319,7 @@ import type { UnionWrapper } from "./types";
     expect(result.content).toContain("orderId: faker.number.int({ min: 1, max: 1000 })");
   });
 
-  test("applies include/exclude filters from GenerateOptions", async () => {
+  test("applies include/exclude filters from IncludeGenerators/ExcludeGenerators in data-gen file", async () => {
     const cwd = await createFixture({
       "types.ts": `
 export type A = { a: string };
@@ -325,18 +329,16 @@ export type C = { c: boolean };
       "data-gen.ts": `
 import type { A, B, C } from "./types";
 
+type IncludeGenerators = [A, B];
+type ExcludeGenerators = [B];
+
 /**
  * Generated below - DO NOT EDIT
  */
 `,
     });
 
-    const result = await generateDataFile({
-      cwd,
-      write: false,
-      include: ["A", "generateB"],
-      exclude: ["B"],
-    });
+    const result = await generateDataFile({cwd, write: false});
 
     expect(result.content).toContain("export function generateA(");
     expect(result.content).not.toContain("export function generateB(");
@@ -407,7 +409,7 @@ const FakerOverrides = {
     expect(result.content).not.toContain("export function generateUserId(");
   });
 
-  test("applies FakerOverrides passed via GenerateOptions", async () => {
+  test("applies FakerOverrides from data-gen file", async () => {
     const cwd = await createFixture({
       "types.ts": `
 export type User = {
@@ -418,26 +420,24 @@ export type User = {
       "data-gen.ts": `
 import type { User } from "./types";
 
+const FakerOverrides = {
+  name: () => faker.person.firstName(),
+  age: 42,
+} as const;
+
 /**
  * Generated below - DO NOT EDIT
  */
 `,
     });
 
-    const result = await generateDataFile({
-      cwd,
-      write: false,
-      fakerOverrides: {
-        name: (faker) => faker.person.firstName(),
-        age: "42",
-      },
-    });
+    const result = await generateDataFile({cwd, write: false});
 
-    expect(result.content).toContain("name: ((faker) => faker.person.firstName())(faker)");
+    expect(result.content).toContain("name: faker.person.firstName()");
     expect(result.content).toContain("age: 42");
   });
 
-  test("applies fakerStrategy when no direct FakerOverrides match", async () => {
+  test("applies FakerStrategy from data-gen file when no direct FakerOverrides match", async () => {
     const cwd = await createFixture({
       "types.ts": `
 export type User = {
@@ -449,32 +449,30 @@ export type User = {
       "data-gen.ts": `
 import type { User } from "./types";
 
+const FakerStrategy = (context) => {
+  if (context.rootTypeText === "User" && context.path === "id") {
+    return { expression: "faker.string.uuid()", invokeMode: "raw" };
+  }
+  if (context.path === "email") {
+    return { expression: "faker.internet.email()", invokeMode: "raw" };
+  }
+  return undefined;
+};
+
 /**
  * Generated below - DO NOT EDIT
  */
 `,
     });
 
-    const result = await generateDataFile({
-      cwd,
-      write: false,
-      fakerStrategy(context) {
-        if (context.rootTypeText === "User" && context.path === "id") {
-          return {expression: "faker.string.uuid()", invokeMode: "raw"};
-        }
-        if (context.path === "email") {
-          return (faker) => faker.internet.email();
-        }
-        return undefined;
-      },
-    });
+    const result = await generateDataFile({cwd, write: false});
 
     expect(result.content).toContain("id: faker.string.uuid()");
-    expect(result.content).toContain("email: ((faker) => faker.internet.email())(faker)");
+    expect(result.content).toContain("email: faker.internet.email()");
     expect(result.content).toContain("age: faker.number.int({ min: 1, max: 1000 })");
   });
 
-  test("prioritizes FakerOverrides over fakerStrategy", async () => {
+  test("prioritizes FakerOverrides over FakerStrategy in data-gen file", async () => {
     const cwd = await createFixture({
       "types.ts": `
 export type User = {
@@ -485,25 +483,24 @@ export type User = {
       "data-gen.ts": `
 import type { User } from "./types";
 
+const FakerOverrides = {
+  "User.id": () => faker.string.alphanumeric(12),
+} as const;
+
+const FakerStrategy = (context) => {
+  if (context.path === "id") {
+    return { expression: "faker.string.uuid()", invokeMode: "raw" };
+  }
+  return undefined;
+};
+
 /**
  * Generated below - DO NOT EDIT
  */
 `,
     });
 
-    const result = await generateDataFile({
-      cwd,
-      write: false,
-      fakerOverrides: {
-        "User.id": "faker.string.alphanumeric(12)",
-      },
-      fakerStrategy(context) {
-        if (context.path === "id") {
-          return {expression: "faker.string.uuid()", invokeMode: "raw"};
-        }
-        return undefined;
-      },
-    });
+    const result = await generateDataFile({cwd, write: false});
 
     expect(result.content).toContain("id: faker.string.alphanumeric(12)");
     expect(result.content).not.toContain("id: faker.string.uuid()");
@@ -559,7 +556,7 @@ const FakerOverrides = {
     expect(result.content).toContain("email: faker.internet.email()");
   });
 
-  test("warns for unmatched include/exclude filters and unused faker overrides", async () => {
+  test("warns for unmatched include/exclude filters and unused faker overrides from data-gen file", async () => {
     const cwd = await createFixture({
       "types.ts": `
 export type User = {
@@ -569,21 +566,20 @@ export type User = {
       "data-gen.ts": `
 import type { User } from "./types";
 
+type IncludeGenerators = [User, MissingType];
+type ExcludeGenerators = [AlsoMissing];
+
+const FakerOverrides = {
+  "Missing.path": "() => faker.word.noun()",
+} as const;
+
 /**
  * Generated below - DO NOT EDIT
  */
 `,
     });
 
-    const result = await generateDataFile({
-      cwd,
-      write: false,
-      include: ["User", "MissingType"],
-      exclude: ["AlsoMissing"],
-      fakerOverrides: {
-        "Missing.path": "() => faker.word.noun()",
-      },
-    });
+    const result = await generateDataFile({cwd, write: false});
 
     expect(result.warnings).toContain("Unmatched include filters: MissingType");
     expect(result.warnings).toContain("Unmatched exclude filters: AlsoMissing");
@@ -602,19 +598,17 @@ export type User = {
       "data-gen.ts": `
 import type { User } from "./types";
 
+const FakerOverrides = {
+  "User.emial": "faker.internet.email()",
+} as const;
+
 /**
  * Generated below - DO NOT EDIT
  */
 `,
     });
 
-    const result = await generateDataFile({
-      cwd,
-      write: false,
-      fakerOverrides: {
-        "User.emial": "faker.internet.email()",
-      },
-    });
+    const result = await generateDataFile({cwd, write: false});
 
     const warning = result.warnings.find((w) => w.includes("User.emial"));
     expect(warning).toBeDefined();
@@ -633,20 +627,18 @@ export type User = {
       "data-gen.ts": `
 import type { User } from "./types";
 
+const FakerOverrides = {
+  "User.email": "faker.internet.email()",
+  "CompletelyUnrelated.xyzzy": "faker.word.noun()",
+} as const;
+
 /**
  * Generated below - DO NOT EDIT
  */
 `,
     });
 
-    const result = await generateDataFile({
-      cwd,
-      write: false,
-      fakerOverrides: {
-        "User.email": "faker.internet.email()",
-        "CompletelyUnrelated.xyzzy": "faker.word.noun()",
-      },
-    });
+    const result = await generateDataFile({cwd, write: false});
 
     const warning = result.warnings.find((w) => w.includes("CompletelyUnrelated.xyzzy"));
     expect(warning).toBeDefined();
@@ -661,6 +653,8 @@ export type User = { name: string };
       "data-gen.ts": `
 import type { User } from "./types";
 
+type IncludeGenerators = [MissingType];
+
 /**
  * Generated below - DO NOT EDIT
  */
@@ -672,7 +666,6 @@ import type { User } from "./types";
         cwd,
         write: false,
         failOnWarn: true,
-        include: ["MissingType"],
       }),
     ).rejects.toThrow("Generation failed due to warnings:");
   });
@@ -753,7 +746,7 @@ import type { User } from "./types";
     expect(result.content).not.toContain("locale: faker");
   });
 
-  test("omits optional properties when optionalProperties policy is omit", async () => {
+  test("omits optional properties when optionalProperties policy is omit via GenGenConfig", async () => {
     const cwd = await createFixture({
       "types.ts": `
 export type Account = {
@@ -764,25 +757,23 @@ export type Account = {
       "data-gen.ts": `
 import type { Account } from "./types";
 
+const GenGenConfig = {
+  optionalProperties: "omit",
+} as const;
+
 /**
  * Generated below - DO NOT EDIT
  */
 `,
     });
 
-    const result = await generateDataFile({
-      cwd,
-      write: false,
-      propertyPolicy: {
-        optionalProperties: "omit",
-      },
-    });
+    const result = await generateDataFile({cwd, write: false});
 
     expect(result.content).toContain("id: faker.word.noun()");
     expect(result.content).not.toContain("email:");
   });
 
-  test("emits warnings for index signatures by policy", async () => {
+  test("emits warnings for index signatures by policy via GenGenConfig", async () => {
     const cwd = await createFixture({
       "types.ts": `
 export type Config = {
@@ -795,19 +786,17 @@ export type Config = {
       "data-gen.ts": `
 import type { Config } from "./types";
 
+const GenGenConfig = {
+  indexSignatures: "warn",
+} as const;
+
 /**
  * Generated below - DO NOT EDIT
  */
 `,
     });
 
-    const result = await generateDataFile({
-      cwd,
-      write: false,
-      propertyPolicy: {
-        indexSignatures: "warn",
-      },
-    });
+    const result = await generateDataFile({cwd, write: false});
 
     expect(result.warnings).not.toContain("Readonly property included by policy at Config.id.");
     expect(result.warnings).toContain("Index signature (string) not materialized at Config.values.");
@@ -1151,45 +1140,6 @@ const FakerStrategy = (ctx) => {
     expect(result.content).toContain("age: faker.number.int({ min: 1, max: 1000 })");
   });
 
-  test("API-level fakerStrategy overrides file-level FakerStrategy", async () => {
-    const cwd = await createFixture({
-      "types.ts": `
-export type User = {
-  id: string;
-  email: string;
-};
-`,
-      "data-gen.ts": `
-import type { User } from "./types";
-
-const FakerStrategy = (ctx) => {
-  if (ctx.path === "id") {
-    return { expression: "faker.string.uuid()", invokeMode: "raw" };
-  }
-  return undefined;
-};
-
-/**
- * Generated below - DO NOT EDIT
- */
-`,
-    });
-
-    const result = await generateDataFile({
-      cwd,
-      write: false,
-      fakerStrategy(context) {
-        if (context.path === "id") {
-          return {expression: "faker.string.alphanumeric(12)", invokeMode: "raw"};
-        }
-        return undefined;
-      },
-    });
-
-    // API strategy wins: alphanumeric, not uuid
-    expect(result.content).toContain("id: faker.string.alphanumeric(12)");
-    expect(result.content).not.toContain("id: faker.string.uuid()");
-  });
 
   test("GenGenConfig in data-gen file sets optionalProperties to omit", async () => {
     const cwd = await createFixture({
@@ -1243,34 +1193,6 @@ const GenGenConfig = {
     expect(result.content).not.toContain("return __genGenMergeDeep(base, resolvedOverrides);");
   });
 
-  test("API-level options override GenGenConfig in data-gen file", async () => {
-    const cwd = await createFixture({
-      "types.ts": `
-export type Item = { id: number; name: string; description?: string };
-`,
-      "data-gen.ts": `
-import type { Item } from "./types";
-
-const GenGenConfig = {
-  optionalProperties: "omit",
-} as const;
-
-/**
- * Generated below - DO NOT EDIT
- */
-`,
-    });
-
-    // API-level override: include optional properties despite file config saying omit
-    const result = await generateDataFile({
-      cwd,
-      write: false,
-      propertyPolicy: {optionalProperties: "include"},
-    });
-
-    expect(result.content).toContain("export function generateItem(");
-    expect(result.content).toContain("description:");
-  });
 
   test("GenGenConfig deepMerge=true from file enables deep merge helper", async () => {
     const cwd = await createFixture({

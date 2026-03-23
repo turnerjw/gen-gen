@@ -3,17 +3,31 @@ import {describe, expect, test} from "bun:test";
 import {parseArgs} from "../src/cli-core.js";
 
 describe("cli-core parseArgs", () => {
-  test("parses --faker-strategy module path", () => {
-    const options = parseArgs(["--input", "example/basic/data-gen.ts", "--faker-strategy", "./strategy.ts"]);
-    expect(options.input).toBe("example/basic/data-gen.ts");
-    expect(options.fakerStrategyModule).toBe("./strategy.ts");
-  });
-
-  test("throws when --faker-strategy path is missing", () => {
-    expect(() => parseArgs(["--faker-strategy"])).toThrow("Expected a module path after --faker-strategy.");
+  test("throws for removed --preset flag", () => {
+    expect(() => parseArgs(["--preset", "common"])).toThrow("Unknown argument: --preset");
   });
 
   test("throws for unknown --watch-diagnostics flag", () => {
     expect(() => parseArgs(["--watch", "--watch-diagnostics"])).toThrow("Unknown argument: --watch-diagnostics");
+  });
+
+  test("throws for removed --faker-strategy flag", () => {
+    expect(() => parseArgs(["--faker-strategy", "./strategy.ts"])).toThrow("Unknown argument: --faker-strategy");
+  });
+
+  test("throws for removed --deep-merge flag", () => {
+    expect(() => parseArgs(["--deep-merge"])).toThrow("Unknown argument: --deep-merge");
+  });
+
+  test("throws for removed --include flag", () => {
+    expect(() => parseArgs(["--include", "A,B"])).toThrow("Unknown argument: --include");
+  });
+
+  test("throws for removed --exclude flag", () => {
+    expect(() => parseArgs(["--exclude", "C"])).toThrow("Unknown argument: --exclude");
+  });
+
+  test("throws for removed --faker-override flag", () => {
+    expect(() => parseArgs(["--faker-override", "key=value"])).toThrow("Unknown argument: --faker-override");
   });
 });

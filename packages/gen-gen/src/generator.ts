@@ -7,12 +7,6 @@ export interface GenerateOptions {
   cwd?: string;
   write?: boolean;
   failOnWarn?: boolean;
-  propertyPolicy?: Partial<PropertyPolicy>;
-  deepMerge?: boolean;
-  include?: string[];
-  exclude?: string[];
-  fakerOverrides?: Record<string, FakerOverrideInput>;
-  fakerStrategy?: FakerStrategyHook;
 }
 
 export type FakerOverrideInput = string | ((faker: typeof import("@faker-js/faker").faker) => unknown);
@@ -96,18 +90,11 @@ export async function generateDataFile(options: GenerateOptions = {}): Promise<G
   const write = options.write ?? true;
 
   const original = await fs.readFile(inputPath, "utf8");
-  const parsed = parseTargets(inputPath, {
-    include: options.include ?? [],
-    exclude: options.exclude ?? [],
-    fakerOverrides: options.fakerOverrides ?? {},
-  });
+  const parsed = parseTargets(inputPath);
   const fileConfig = parsed.genGenConfig;
-  const mergedDeepMerge = options.deepMerge ?? fileConfig.deepMerge ?? true;
-  const mergedPropertyPolicy = resolvePropertyPolicy({
-    ...fileConfig,
-    ...options.propertyPolicy,
-  });
-  const fakerStrategy = options.fakerStrategy ?? parsed.fakerStrategy;
+  const mergedDeepMerge = fileConfig.deepMerge ?? true;
+  const mergedPropertyPolicy = resolvePropertyPolicy(fileConfig);
+  const fakerStrategy = parsed.fakerStrategy;
   const emitted = emitFunctions(
     parsed.targets,
     parsed.checker,
@@ -156,11 +143,6 @@ function resolvePropertyPolicy(policy: Partial<PropertyPolicy> | undefined): Pro
 
 function parseTargets(
   inputPath: string,
-  filterOptions: {
-    include: string[];
-    exclude: string[];
-    fakerOverrides: Record<string, FakerOverrideInput>;
-  },
 ): {
   sourceFile: ts.SourceFile;
   checker: ts.TypeChecker;
@@ -222,14 +204,11 @@ function parseTargets(
   for (const [key, value] of Object.entries(inFileFakerOverrides)) {
     fakerOverrides.set(normalizeFilterKey(key), value);
   }
-  for (const [key, value] of Object.entries(filterOptions.fakerOverrides)) {
-    fakerOverrides.set(normalizeFilterKey(key), toFakerOverrideSpec(value, key));
-  }
 
   const uniqueTargets = dedupeTargets(targets);
   const filterResult = applyTargetFilters(uniqueTargets, {
-    include: mergeFilters(filterOptions.include, inFileInclude),
-    exclude: mergeFilters(filterOptions.exclude, inFileExclude),
+    include: inFileInclude,
+    exclude: inFileExclude,
   });
   warnings.push(...collectUnmatchedFilterWarnings(filterResult));
 
@@ -576,16 +555,6 @@ function extractFunctionOverrideSpec(
   }
 
   return null;
-}
-
-function mergeFilters(...groups: string[][]): string[] {
-  const merged = new Set<string>();
-  for (const group of groups) {
-    for (const value of group) {
-      merged.add(value);
-    }
-  }
-  return [...merged];
 }
 
 function applyTargetFilters(

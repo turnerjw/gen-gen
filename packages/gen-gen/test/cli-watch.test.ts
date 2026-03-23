@@ -15,7 +15,6 @@ function baseOptions(): CliOptions {
     failOnWarn: false,
     optionalProperties: "include",
     indexSignatures: "ignore",
-    typeMappingPresets: [],
     watch: true,
     deepMerge: false,
     include: [],

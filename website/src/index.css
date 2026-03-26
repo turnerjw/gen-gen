@@ -3,20 +3,21 @@
 @tailwind utilities;
 
 :root {
-  --background: 40 20% 98%;
-  --foreground: 210 25% 12%;
+  --background: 0 0% 100%;
+  --foreground: 0 0% 4%;
   --card: 0 0% 100%;
-  --card-foreground: 210 25% 12%;
-  --primary: 203 89% 53%;
+  --card-foreground: 0 0% 4%;
+  --primary: 0 83% 59%;
   --primary-foreground: 0 0% 100%;
-  --secondary: 45 92% 52%;
-  --secondary-foreground: 210 25% 12%;
-  --muted: 210 18% 93%;
-  --muted-foreground: 210 14% 42%;
-  --border: 210 20% 86%;
-  --input: 210 20% 86%;
-  --ring: 203 89% 53%;
-  --radius: 0.75rem;
+  --secondary: 0 0% 96%;
+  --secondary-foreground: 0 0% 4%;
+  --muted: 0 0% 96%;
+  --muted-foreground: 0 0% 40%;
+  --border: 0 0% 4%;
+  --border-light: 0 0% 86%;
+  --input: 0 0% 86%;
+  --ring: 0 83% 59%;
+  --radius: 0px;
 }
 
 * {
@@ -27,18 +28,22 @@ body {
   margin: 0;
   min-height: 100vh;
   @apply bg-background text-foreground antialiased;
-  font-family: "IBM Plex Sans", "Avenir Next", Avenir, "Segoe UI", sans-serif;
+  font-family: "JetBrains Mono", "SFMono-Regular", Menlo, Consolas, "Liberation Mono", monospace;
 }
 
 code,
 pre,
 textarea {
-  font-family: "IBM Plex Mono", "SFMono-Regular", Menlo, Consolas, "Liberation Mono", monospace;
+  font-family: "JetBrains Mono", "SFMono-Regular", Menlo, Consolas, "Liberation Mono", monospace;
 }
 
-.bg-grid {
-  background-image: radial-gradient(circle at 1px 1px, hsl(var(--border)) 1px, transparent 0);
-  background-size: 18px 18px;
+@keyframes ticker {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+@keyframes blink {
+  50% { opacity: 0; }
 }
 
 @media (prefers-reduced-motion: no-preference) {

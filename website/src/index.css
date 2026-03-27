@@ -20,7 +20,7 @@
   --border-light: 0 0% 86%;
   --input: 0 0% 86%;
   --ring: 345 100% 50%;
-  --radius: 0px;
+  --radius: 16px;
 }
 
 * {

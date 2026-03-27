@@ -2,6 +2,11 @@
 @tailwind components;
 @tailwind utilities;
 
+@font-face {
+  font-family: "Mondwest-Regular";
+  src: url("/fonts/PPMondwest-Regular.otf") format("opentype");
+}
+
 :root {
   --background: 0 0% 100%;
   --foreground: 0 0% 4%;

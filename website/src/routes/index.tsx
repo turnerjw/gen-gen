@@ -59,7 +59,7 @@ function GuidedDemo() {
     <div className="flex h-full flex-col justify-center gap-6 p-8 md:gap-8 md:p-12">
       {/* STEP 1 — Import types */}
       <div>
-        <div className="mb-3 font-display text-[15px] uppercase tracking-[0.2em] text-[#ccc]">
+        <div className="mb-3 font-display text-[18px] uppercase tracking-[0.2em] text-background">
           01 — Feed your types to gen-gen
         </div>
         <pre className="border-2 border-[#222] bg-[#111] p-4 text-[13px] leading-[1.8]">
@@ -77,7 +77,7 @@ function GuidedDemo() {
 
       {/* STEP 2 — Generate data */}
       <div>
-        <div className="mb-3 font-display text-[15px] uppercase tracking-[0.2em] text-[#ccc]">
+        <div className="mb-3 font-display text-[18px] uppercase tracking-[0.2em] text-background">
           02 — Override what matters
         </div>
         <pre className="border-2 border-[#222] bg-[#111] p-4 text-[13px] leading-[1.8]">
@@ -114,7 +114,7 @@ function GuidedDemo() {
       {/* STEP 3 — Output */}
       <div>
         <div className="mb-3 flex items-center justify-between">
-          <span className="font-display text-[15px] uppercase tracking-[0.2em] text-[#ccc]">
+          <span className="font-display text-[18px] uppercase tracking-[0.2em] text-background">
             03 — The rest is randomized
           </span>
           <button
@@ -183,12 +183,10 @@ function HomePage() {
           className="rounded-tl-lg rounded-bl-lg px-10 py-8 md:px-12"
           style={{background: "radial-gradient(ellipse at 10% 90%, hsla(15, 100%, 72%, 0.7) 0%, transparent 50%), radial-gradient(ellipse at 90% 10%, hsla(345, 100%, 78%, 0.5) 0%, transparent 45%), radial-gradient(ellipse at 55% 55%, hsla(0, 100%, 68%, 0.35) 0%, transparent 60%), hsl(345, 100%, 50%)"}}
         >
-          <p className="max-w-[420px] text-md font-semibold leading-[1.8] text-foreground">
-            Test data by hand doesn't scale. Hard-coded fixtures leak.
-            Shared globals hide bugs. gen-gen reads your TypeScript types
-            and generates factory functions — override what matters,
-            randomize the rest.
-          </p>
+          <div className="max-w-[420px] text-[16px] leading-[1.7]">
+            <p className="font-normal text-foreground">Your TypeScript types already know what your data looks like.</p>
+            <p className="mt-3 font-bold text-foreground">gen-gen turns them into factory functions — randomized by default, overridable on demand.</p>
+          </div>
         </div>
 
         {/* Row 3 — install */}
@@ -207,7 +205,7 @@ function HomePage() {
         <div className="flex animate-[ticker_20s_linear_infinite] flex-col">
           {[...Array(2)].map((_, i) => (
             <span key={i} className="flex flex-col">
-              {["Types in", "Factories out", "Faker powered", "Override what matters", "Randomize the rest", "Zero config", "Type-safe"].map((text) => (
+              {["Type-safe", "Zero boilerplate", "Faker powered", "Fresh every run", "Surgical overrides", "Inferred, not written", "No stale fixtures"].map((text) => (
                 <span key={text} className="py-4 text-[13px] font-bold uppercase tracking-[0.18em] text-background [writing-mode:vertical-lr]">{text}</span>
               ))}
             </span>

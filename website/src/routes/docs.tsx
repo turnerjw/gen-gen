@@ -24,21 +24,21 @@ function DocsLayout() {
   }, [query]);
 
   return (
-    <div className="grid gap-6 md:grid-cols-[280px_1fr]">
-      <aside className="h-fit space-y-3 rounded-lg border bg-card p-3 text-sm md:sticky md:top-6">
+    <div className="grid gap-0 md:grid-cols-[260px_1fr]">
+      <aside className="h-fit space-y-3 border-b-[3px] border-r-0 border-foreground p-4 text-sm md:sticky md:top-[52px] md:border-b-0 md:border-r-[3px]">
         <div>
-          <div className="font-medium">Documentation</div>
-          <p className="text-xs text-muted-foreground">MVP reference for CLI, API, plugin, and behavior details.</p>
+          <div className="font-display text-sm uppercase">Documentation</div>
+          <p className="mt-1 text-[10px] uppercase tracking-[0.1em] text-muted-foreground">CLI, API, plugin, and behavior reference.</p>
         </div>
 
         <input
           value={query}
           onChange={(event) => setQuery(event.target.value)}
           placeholder="Filter docs"
-          className="w-full rounded-md border bg-background px-2 py-1.5 text-sm outline-none ring-primary focus:ring-1"
+          className="w-full border-2 border-foreground bg-background px-2 py-1.5 text-sm outline-none focus:border-primary"
         />
 
-        <nav className="flex max-h-[60vh] flex-col gap-1 overflow-auto pr-1">
+        <nav className="flex max-h-[60vh] flex-col gap-0.5 overflow-auto pr-1">
           {filtered.map((item) => {
             const active =
               location.pathname === item.to ||
@@ -48,21 +48,21 @@ function DocsLayout() {
               <Link
                 key={item.to}
                 to={item.to}
-                className={`rounded px-2 py-1.5 ${
+                className={`px-2 py-1.5 text-xs transition-colors ${
                   active
-                    ? "bg-muted font-medium text-foreground"
-                    : "bg-card text-muted-foreground hover:bg-muted/60 hover:text-foreground"
+                    ? "bg-foreground font-bold text-background"
+                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
                 }`}
               >
                 {item.title}
               </Link>
             );
           })}
-          {filtered.length === 0 ? <p className="px-2 py-1 text-xs text-muted-foreground">No matching docs pages.</p> : null}
+          {filtered.length === 0 ? <p className="px-2 py-1 text-[10px] text-muted-foreground">No matching docs.</p> : null}
         </nav>
       </aside>
 
-      <section className="min-w-0 rounded-lg border bg-card p-5">
+      <section className="min-w-0 p-6 md:p-8">
         <Outlet />
       </section>
     </div>

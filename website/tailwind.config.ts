@@ -32,6 +32,14 @@ const config: Config = {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
+        docs: {
+          surface: "hsl(var(--docs-surface))",
+          text: "hsl(var(--docs-text))",
+          heading: "hsl(var(--docs-heading))",
+          muted: "hsl(var(--docs-muted))",
+          link: "hsl(var(--docs-link))",
+          divider: "hsl(var(--docs-divider))",
+        },
         syntax: {
           surface: "hsl(var(--syntax-surface))",
           border: "hsl(var(--syntax-border))",

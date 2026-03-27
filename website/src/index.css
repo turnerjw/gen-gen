@@ -22,6 +22,12 @@
   --ring: 345 100% 50%;
   --radius: 16px;
   --header-height: 52px;
+  --docs-surface: 0 0% 10%;
+  --docs-text: 0 0% 82%;
+  --docs-heading: 0 0% 95%;
+  --docs-muted: 0 0% 55%;
+  --docs-link: 345 100% 65%;
+  --docs-divider: 0 0% 18%;
   --syntax-surface: 0 0% 7%;
   --syntax-border: 0 0% 13%;
   --syntax-muted: 0 0% 53%;
@@ -48,6 +54,72 @@ code,
 pre,
 textarea {
   font-family: "JetBrains Mono", "SFMono-Regular", Menlo, Consolas, "Liberation Mono", monospace;
+}
+
+/* ── Docs prose styles ── */
+
+.docs-prose h2 {
+  color: hsl(var(--docs-heading));
+  font-weight: 600;
+  font-size: 1.375rem;
+}
+
+.docs-prose h3 {
+  color: hsl(var(--docs-heading));
+  font-weight: 600;
+  font-size: 1.125rem;
+}
+
+.docs-prose p {
+  color: hsl(var(--docs-text));
+}
+
+.docs-prose a {
+  color: hsl(var(--docs-link));
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  transition: color 150ms;
+}
+
+.docs-prose a:hover {
+  color: hsl(var(--primary));
+}
+
+.docs-prose ul,
+.docs-prose ol {
+  color: hsl(var(--docs-text));
+}
+
+.docs-prose li::marker {
+  color: hsl(var(--docs-muted));
+}
+
+.docs-prose code:not(pre code) {
+  background: hsl(var(--syntax-surface));
+  border: 1px solid hsl(var(--docs-divider));
+  border-radius: 3px;
+  padding: 0.15em 0.4em;
+  font-size: 0.9em;
+  color: hsl(var(--syntax-identifier));
+}
+
+.docs-prose strong {
+  color: hsl(var(--docs-heading));
+  font-weight: 600;
+}
+
+/* ── Docs nav cards (prev/next) ── */
+
+.docs-nav-card {
+  background: hsl(var(--docs-surface));
+  transition: background 300ms ease;
+}
+
+.docs-nav-card:hover {
+  background:
+    radial-gradient(ellipse at 0% 0%, hsla(345, 100%, 55%, 0.5) 0%, transparent 55%),
+    radial-gradient(ellipse at 100% 100%, hsla(345, 80%, 45%, 0.35) 0%, transparent 50%),
+    hsl(0, 0%, 4%);
 }
 
 @keyframes ticker {

@@ -10,6 +10,9 @@ const navLinkClass = "px-4 text-xs uppercase tracking-[0.1em] text-[#aaa] no-und
 function RootLayout() {
   const routerState = useRouterState();
   const isHome = routerState.location.pathname === "/";
+  const isDocs = routerState.location.pathname.startsWith("/docs");
+  const isPlayground = routerState.location.pathname.startsWith("/playground");
+  const isFullBleed = isHome || isDocs || isPlayground;
 
   return (
     <div className="min-h-screen">
@@ -31,7 +34,7 @@ function RootLayout() {
       </header>
 
       {/* MAIN */}
-      <main id="main-content" className={isHome ? "mt-[var(--header-height)]" : "mx-auto mt-[var(--header-height)] w-full max-w-6xl px-6 py-10 md:px-10 md:py-14"}>
+      <main id="main-content" className={isFullBleed ? "mt-[var(--header-height)]" : "mx-auto mt-[var(--header-height)] w-full max-w-6xl px-6 py-10 md:px-10 md:py-14"}>
         <Outlet />
       </main>
 

@@ -21,6 +21,16 @@
   --input: 0 0% 86%;
   --ring: 345 100% 50%;
   --radius: 16px;
+  --header-height: 52px;
+  --syntax-surface: 0 0% 7%;
+  --syntax-border: 0 0% 13%;
+  --syntax-muted: 0 0% 53%;
+  --syntax-comment: 0 0% 60%;
+  --syntax-keyword: 0 0% 67%;
+  --syntax-property: 0 0% 73%;
+  --syntax-punctuation: 0 0% 80%;
+  --syntax-value: 0 0% 87%;
+  --syntax-identifier: 0 0% 93%;
 }
 
 * {

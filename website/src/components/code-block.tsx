@@ -12,7 +12,7 @@ export function CodeBlock({code, language, className}: CodeBlockProps) {
   return (
     <Highlight code={code.trimEnd()} language={language} theme={themes.vsDark}>
       {({className: highlightClassName, style, tokens, getLineProps, getTokenProps}) => (
-        <pre className={cn("overflow-auto border-2 border-foreground bg-[#0a0a0a] p-4 text-sm", highlightClassName, className)} style={{...style, backgroundColor: "#0a0a0a"}}>
+        <pre className={cn("overflow-auto border-brand border-docs-divider bg-syntax-surface p-4 text-sm", highlightClassName, className)} style={{...style, backgroundColor: "hsl(var(--syntax-surface))"}}>
           {tokens.map((line, lineIndex) => {
             const lineProps = getLineProps({line});
             return (

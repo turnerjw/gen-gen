@@ -24,21 +24,22 @@ function DocsLayout() {
   }, [query]);
 
   return (
-    <div className="grid gap-0 md:grid-cols-[260px_1fr]">
-      <aside className="h-fit space-y-3 border-b-[3px] border-r-0 border-foreground p-4 text-sm md:sticky md:top-[52px] md:border-b-0 md:border-r-[3px]">
+    <div className="grid min-h-[calc(100vh-var(--header-height))] gap-0 bg-docs-surface md:grid-cols-[260px_1fr]">
+      {/* Sidebar */}
+      <aside className="space-y-3 border-b-brand border-r-0 border-docs-divider bg-foreground p-4 text-sm text-background md:sticky md:top-[var(--header-height)] md:h-[calc(100vh-var(--header-height))] md:overflow-y-auto md:border-b-0 md:border-r-brand md:border-r-docs-divider">
         <div>
-          <div className="font-display text-sm uppercase">Documentation</div>
-          <p className="mt-1 text-[10px] uppercase tracking-[0.1em] text-muted-foreground">CLI, API, plugin, and behavior reference.</p>
+          <div className="font-display text-lg uppercase tracking-display">Documentation</div>
+          <p className="mt-1 text-xs uppercase tracking-nav text-syntax-muted">CLI, API, plugin, and behavior reference.</p>
         </div>
 
         <input
           value={query}
           onChange={(event) => setQuery(event.target.value)}
           placeholder="Filter docs"
-          className="w-full border-2 border-foreground bg-background px-2 py-1.5 text-sm outline-none focus:border-primary"
+          className="w-full border-brand border-syntax-border bg-syntax-surface px-2 py-1.5 text-sm text-background outline-none placeholder:text-[#555] focus:border-primary"
         />
 
-        <nav className="flex max-h-[60vh] flex-col gap-0.5 overflow-auto pr-1">
+        <nav className="flex flex-col gap-0.5 pr-1">
           {filtered.map((item) => {
             const active =
               location.pathname === item.to ||
@@ -48,22 +49,25 @@ function DocsLayout() {
               <Link
                 key={item.to}
                 to={item.to}
-                className={`px-2 py-1.5 text-xs transition-colors ${
+                className={`px-2 py-1.5 text-sm transition-colors ${
                   active
-                    ? "bg-foreground font-bold text-background"
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                    ? "bg-primary font-bold text-foreground"
+                    : "text-docs-muted hover:bg-syntax-surface hover:text-background"
                 }`}
               >
                 {item.title}
               </Link>
             );
           })}
-          {filtered.length === 0 ? <p className="px-2 py-1 text-[10px] text-muted-foreground">No matching docs.</p> : null}
+          {filtered.length === 0 ? <p className="px-2 py-1 text-xs text-syntax-muted">No matching docs.</p> : null}
         </nav>
       </aside>
 
-      <section className="min-w-0 p-6 md:p-8">
-        <Outlet />
+      {/* Content */}
+      <section className="min-w-0 px-8 py-10 md:px-16 md:py-14">
+        <div className="mx-auto max-w-3xl">
+          <Outlet />
+        </div>
       </section>
     </div>
   );

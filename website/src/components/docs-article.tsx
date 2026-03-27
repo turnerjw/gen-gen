@@ -14,45 +14,49 @@ export function DocsArticle({title, summary, children}: DocsArticleProps) {
   const {previous, next} = getAdjacentDocs(location.pathname);
 
   return (
-    <article className="space-y-6">
-      <header className="space-y-3 border-b-[3px] border-foreground pb-4">
+    <article className="space-y-8">
+      <header className="space-y-3 border-b-brand border-docs-divider pb-5">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <h1 className="font-display text-2xl uppercase md:text-3xl">{title}</h1>
+          <h1 className="font-display text-3xl uppercase text-docs-heading md:text-4xl">{title}</h1>
           {current ? (
             <a
               href={getEditUrl(current.sourcePath)}
               target="_blank"
               rel="noreferrer"
-              className="text-[10px] uppercase tracking-[0.1em] text-muted-foreground hover:text-foreground"
+              className="text-xs uppercase tracking-nav text-docs-muted transition-colors hover:text-docs-link"
             >
               Edit on GitHub
             </a>
           ) : null}
         </div>
-        <p className="text-xs text-muted-foreground">{summary}</p>
+        <p className="text-sm text-docs-muted">{summary}</p>
       </header>
 
-      <div className="[&_pre]:max-w-full [&_pre]:w-full [&_pre]:overflow-x-auto [&_pre]:overflow-y-hidden min-w-0 space-y-6 text-sm leading-6">
+      <div className="docs-prose min-w-0 space-y-8 text-base leading-[1.8] text-docs-text [&_pre]:w-full [&_pre]:max-w-full [&_pre]:overflow-x-auto [&_pre]:overflow-y-hidden">
         {children}
       </div>
 
       {(previous || next) && (
-        <footer className="grid gap-0 border-t-[3px] border-foreground pt-4 sm:grid-cols-2">
-          <div>
+        <footer className="pt-6">
+          <div className="grid gap-[3px] rounded-lg sm:grid-cols-2">
             {previous ? (
-              <Link to={previous.to} className="block border-2 border-foreground p-3 transition-colors hover:bg-foreground hover:text-background">
-                <p className="text-[10px] uppercase tracking-[0.1em] text-muted-foreground">Previous</p>
-                <p className="font-bold">{previous.title}</p>
+              <Link
+                to={previous.to}
+                className="docs-nav-card rounded-tl-lg p-5 transition-all max-sm:rounded-tr-lg sm:rounded-bl-lg"
+              >
+                <p className="text-xs uppercase tracking-nav text-docs-muted">Previous</p>
+                <p className="font-bold text-docs-heading">{previous.title}</p>
               </Link>
-            ) : null}
-          </div>
-          <div>
+            ) : <div className="rounded-tl-lg bg-docs-surface max-sm:rounded-tr-lg sm:rounded-bl-lg" />}
             {next ? (
-              <Link to={next.to} className="block border-2 border-l-0 border-foreground p-3 text-right transition-colors hover:bg-foreground hover:text-background max-sm:border-l-2 max-sm:border-t-0">
-                <p className="text-[10px] uppercase tracking-[0.1em] text-muted-foreground">Next</p>
-                <p className="font-bold">{next.title}</p>
+              <Link
+                to={next.to}
+                className="docs-nav-card rounded-tr-lg p-5 text-right transition-all max-sm:rounded-bl-lg max-sm:rounded-tr-none sm:rounded-br-lg"
+              >
+                <p className="text-xs uppercase tracking-nav text-docs-muted">Next</p>
+                <p className="font-bold text-docs-heading">{next.title}</p>
               </Link>
-            ) : null}
+            ) : <div className="rounded-tr-lg bg-docs-surface max-sm:rounded-bl-lg max-sm:rounded-tr-none sm:rounded-br-lg" />}
           </div>
         </footer>
       )}

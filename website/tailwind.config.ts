@@ -6,7 +6,7 @@ const config: Config = {
   theme: {
     extend: {
       fontFamily: {
-        display: ["'Archivo Black'", "sans-serif"],
+        display: ["'Instrument Serif'", "'Instrument Serif'", "serif"],
         mono: ["'JetBrains Mono'", "SFMono-Regular", "Menlo", "Consolas", "monospace"],
       },
       colors: {

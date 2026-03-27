@@ -59,17 +59,17 @@ function GuidedDemo() {
     <div className="flex h-full flex-col justify-center gap-6 p-8 md:gap-8 md:p-12">
       {/* STEP 1 — Import types */}
       <div>
-        <div className="mb-3 text-[10px] uppercase tracking-[0.2em] text-[#555]">
+        <div className="mb-3 font-display text-[15px] uppercase tracking-[0.2em] text-[#aaa]">
           01 — Feed your types to gen-gen
         </div>
-        <pre className="border-2 border-[#222] bg-[#111] p-4 text-[12px] leading-[1.8]">
+        <pre className="border-2 border-[#222] bg-[#111] p-4 text-[13px] leading-[1.8]">
           <code>
-            <span className="text-[#666]">import type</span>{" "}
+            <span className="text-[#888]">import type</span>{" "}
             <span className="text-[#e0e0e0]">{"{"}</span>
             <span className="text-[#ccc]">User</span>
             <span className="text-[#e0e0e0]">{"}"}</span>{" "}
             <span className="text-[#666]">from</span>{" "}
-            <span className="text-[#888]">"./user"</span>
+            <span className="text-[#aaa]">"./user"</span>
             <span className="text-[#555]">;</span>
           </code>
         </pre>
@@ -77,26 +77,26 @@ function GuidedDemo() {
 
       {/* STEP 2 — Generate data */}
       <div>
-        <div className="mb-3 text-[10px] uppercase tracking-[0.2em] text-[#555]">
+        <div className="mb-3 font-display text-[15px] uppercase tracking-[0.2em] text-[#aaa]">
           02 — Override what matters
         </div>
-        <pre className="border-2 border-[#222] bg-[#111] p-4 text-[12px] leading-[1.8]">
+        <pre className="border-2 border-[#222] bg-[#111] p-4 text-[13px] leading-[1.8]">
           <code>
-            <span className="text-[#666]">const</span>{" "}
-            <span className="text-[#ccc]">user</span>{" "}
-            <span className="text-[#666]">=</span>{" "}
+            <span className="text-[#888]">const</span>{" "}
+            <span className="text-[#ddd]">user</span>{" "}
+            <span className="text-[#888]">=</span>{" "}
             <span className="text-[#e0e0e0]">makeUser</span>
-            <span className="text-[#888]">({"{"}</span>
+            <span className="text-[#aaa]">({"{"}</span>
             {"\n"}
             {"  "}
-            <span className="text-[#888]">name:</span>{" "}
+            <span className="text-[#aaa]">name:</span>{" "}
             <span className="text-primary">"</span>
             <input
               type="text"
               value={nameOverride}
               onChange={(e) => handleNameChange(e.target.value)}
               spellCheck={false}
-              className="inline w-auto border-b border-dashed border-primary bg-transparent text-center text-[12px] text-primary outline-none"
+              className="inline w-auto border-b border-dashed border-primary bg-transparent text-center text-[13px] text-primary outline-none"
               style={{width: `${Math.max(nameOverride.length, 1)}ch`}}
               aria-label="Name override"
             />
@@ -111,7 +111,7 @@ function GuidedDemo() {
       {/* STEP 3 — Output */}
       <div>
         <div className="mb-3 flex items-center justify-between">
-          <span className="text-[10px] uppercase tracking-[0.2em] text-[#555]">
+          <span className="font-display text-[15px] uppercase tracking-[0.2em] text-[#aaa]">
             03 — The rest is randomized
           </span>
           <button
@@ -121,39 +121,39 @@ function GuidedDemo() {
             Regenerate
           </button>
         </div>
-        <pre className="border-2 border-[#222] bg-[#111] p-4 text-[12px] leading-[1.8]">
+        <pre className="border-2 border-[#222] bg-[#111] p-4 text-[13px] leading-[1.8]">
           <code>
-            <span className="text-[#555]">{"// user"}</span>
+            <span className="text-[#777]">{"// user"}</span>
             {"\n"}
-            <span className="text-[#888]">{"{"}</span>
-            {"\n"}
-            {"  "}
-            <span className="text-[#666]">id:</span>{" "}
-            <span className="text-[#888]">{userData.id}</span>
-            <span className="text-[#555]">,</span>
+            <span className="text-[#aaa]">{"{"}</span>
             {"\n"}
             {"  "}
-            <span className="text-[#666]">name:</span>{" "}
+            <span className="text-[#999]">id:</span>{" "}
+            <span className="text-[#bbb]">{userData.id}</span>
+            <span className="text-[#666]">,</span>
+            {"\n"}
+            {"  "}
+            <span className="text-[#999]">name:</span>{" "}
             <span className="text-primary">{userData.name}</span>
-            <span className="text-[#555]">,</span>
+            <span className="text-[#666]">,</span>
             {"        "}
-            <span className="text-[#444]">{"// ← your override"}</span>
+            <span className="text-[#666]">{"// ← your override"}</span>
             {"\n"}
             {"  "}
-            <span className="text-[#666]">email:</span>{" "}
-            <span className="text-[#888]">{userData.email}</span>
-            <span className="text-[#555]">,</span>
+            <span className="text-[#999]">email:</span>{" "}
+            <span className="text-[#bbb]">{userData.email}</span>
+            <span className="text-[#666]">,</span>
             {"\n"}
             {"  "}
-            <span className="text-[#666]">age:</span>{" "}
-            <span className="text-[#888]">{userData.age}</span>
-            <span className="text-[#555]">,</span>
+            <span className="text-[#999]">age:</span>{" "}
+            <span className="text-[#bbb]">{userData.age}</span>
+            <span className="text-[#666]">,</span>
             {"\n"}
             {"  "}
-            <span className="text-[#666]">favouriteColour:</span>{" "}
-            <span className="text-[#888]">{userData.favouriteColour}</span>
+            <span className="text-[#999]">favouriteColour:</span>{" "}
+            <span className="text-[#bbb]">{userData.favouriteColour}</span>
             {"\n"}
-            <span className="text-[#888]">{"}"}</span>
+            <span className="text-[#aaa]">{"}"}</span>
           </code>
         </pre>
       </div>
@@ -163,16 +163,16 @@ function GuidedDemo() {
 
 function HomePage() {
   return (
-    <div className="grid h-[calc(100vh-52px)] grid-cols-1 md:grid-cols-[1fr_3px_1fr]">
+    <div className="grid h-[calc(100vh-52px)] grid-cols-1 md:grid-cols-[1fr_18px_1fr]">
       {/* LEFT — Name, why, install */}
-      <div className="flex flex-col justify-between p-10 md:p-12">
+      <div className="flex flex-col justify-between bg-primary p-10 md:p-12">
         <div />
 
         <div>
           <h1 className="font-display text-[clamp(64px,10vw,140px)] uppercase leading-[0.88] tracking-[-0.04em]">
-            gen<span className="text-primary">-</span>gen
+            gen_gen
           </h1>
-          <p className="mt-6 max-w-[420px] text-[13px] leading-[1.8] text-muted-foreground">
+          <p className="mt-6 max-w-[420px] text-[16px] leading-[1.8] text-foreground">
             Test data by hand doesn't scale. Hard-coded fixtures leak.
             Shared globals hide bugs. gen-gen reads your TypeScript types
             and generates factory functions — override what matters,
@@ -180,19 +180,19 @@ function HomePage() {
           </p>
         </div>
 
-        <div className="flex items-center gap-3 border-[3px] border-foreground bg-secondary px-5 py-3">
-          <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground">Install</span>
-          <code className="text-[13px]"><span className="text-primary">$</span> npm install gen-gen --save-dev</code>
+        <div className="flex items-center gap-3 border-[3px] border-foreground bg-background px-5 py-3">
+          <span className="text-[11px] font-bold uppercase tracking-[0.15em] text-muted-foreground">Install</span>
+          <code className="text-[15px]"><span className="text-primary">$</span> npm install gen-gen --save-dev</code>
         </div>
       </div>
 
       {/* VERTICAL DIVIDER — ticker */}
-      <div className="hidden overflow-hidden bg-primary md:flex" aria-hidden="true">
-        <div className="flex animate-[ticker_20s_linear_infinite] flex-col whitespace-nowrap [writing-mode:vertical-lr]">
+      <div className="hidden overflow-hidden bg-foreground md:flex md:flex-col" aria-hidden="true">
+        <div className="flex animate-[ticker_20s_linear_infinite] flex-col">
           {[...Array(2)].map((_, i) => (
             <span key={i} className="flex flex-col">
               {["Types in", "Factories out", "Faker powered", "Override what matters", "Randomize the rest", "Zero config", "Type-safe"].map((text) => (
-                <span key={text} className="px-0 py-4 text-[10px] font-bold uppercase tracking-[0.18em] text-background">{text}</span>
+                <span key={text} className="py-4 text-[13px] font-bold uppercase tracking-[0.18em] text-background [writing-mode:vertical-lr]">{text}</span>
               ))}
             </span>
           ))}

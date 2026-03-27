@@ -9,6 +9,8 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
+    "@fontsource-variable/outfit": "^5.2.8",
+    "@fontsource/instrument-serif": "^5.2.8",
     "@tanstack/react-router": "^1.120.5",
     "@tanstack/react-router-devtools": "^1.120.5",
     "class-variance-authority": "^0.7.1",

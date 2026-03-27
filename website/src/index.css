@@ -1,18 +1,16 @@
+@import '@fontsource/instrument-serif';
+@import '@fontsource-variable/outfit';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
-@font-face {
-  font-family: "Mondwest-Regular";
-  src: url("/fonts/PPMondwest-Regular.otf") format("opentype");
-}
 
 :root {
   --background: 0 0% 100%;
   --foreground: 0 0% 4%;
   --card: 0 0% 100%;
   --card-foreground: 0 0% 4%;
-  --primary: 0 83% 59%;
+  --primary: 345 100% 50%;
   --primary-foreground: 0 0% 100%;
   --secondary: 0 0% 96%;
   --secondary-foreground: 0 0% 4%;
@@ -21,7 +19,7 @@
   --border: 0 0% 4%;
   --border-light: 0 0% 86%;
   --input: 0 0% 86%;
-  --ring: 0 83% 59%;
+  --ring: 345 100% 50%;
   --radius: 0px;
 }
 
@@ -33,7 +31,7 @@ body {
   margin: 0;
   min-height: 100vh;
   @apply bg-background text-foreground antialiased;
-  font-family: "JetBrains Mono", "SFMono-Regular", Menlo, Consolas, "Liberation Mono", monospace;
+  font-family: "Outfit Variable", "SFMono-Regular", Menlo, Consolas, "Liberation Mono", monospace;
 }
 
 code,
@@ -43,8 +41,8 @@ textarea {
 }
 
 @keyframes ticker {
-  0% { transform: translateX(0); }
-  100% { transform: translateX(-50%); }
+  0% { transform: translateY(0); }
+  100% { transform: translateY(-50%); }
 }
 
 @keyframes blink {

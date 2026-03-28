@@ -1,7 +1,7 @@
 import {Link, Outlet, createFileRoute, useLocation} from "@tanstack/react-router";
 import {useMemo, useState} from "react";
 
-import {docsNav} from "@/lib/docs";
+import {docsNav, docsSections} from "@/lib/docs";
 
 export const Route = createFileRoute("/docs")({
   component: DocsLayout,
@@ -18,10 +18,21 @@ function DocsLayout() {
     }
 
     return docsNav.filter((item) => {
-      const haystack = [item.title, item.description, ...item.keywords].join(" ").toLowerCase();
+      const haystack = [item.title, item.description, item.section, ...item.keywords].join(" ").toLowerCase();
       return haystack.includes(normalized);
     });
   }, [query]);
+
+  const groupedBySection = useMemo(() => {
+    const groups: { section: string; items: typeof filtered }[] = [];
+    for (const section of docsSections) {
+      const items = filtered.filter((item) => item.section === section);
+      if (items.length > 0) {
+        groups.push({ section, items });
+      }
+    }
+    return groups;
+  }, [filtered]);
 
   return (
     <div className="grid min-h-[calc(100vh-var(--header-height))] gap-0 bg-docs-surface md:grid-cols-[260px_1fr]">
@@ -40,25 +51,30 @@ function DocsLayout() {
         />
 
         <nav className="flex flex-col gap-0.5 pr-1">
-          {filtered.map((item) => {
-            const active =
-              location.pathname === item.to ||
-              (item.to === "/docs" && (location.pathname === "/docs" || location.pathname === "/docs/"));
+          {groupedBySection.map((group) => (
+            <div key={group.section} className="mt-3 first:mt-0">
+              <div className="px-2 pb-1 text-xs font-semibold uppercase tracking-nav text-syntax-muted">{group.section}</div>
+              {group.items.map((item) => {
+                const active =
+                  location.pathname === item.to ||
+                  (item.to === "/docs" && (location.pathname === "/docs" || location.pathname === "/docs/"));
 
-            return (
-              <Link
-                key={item.to}
-                to={item.to}
-                className={`px-2 py-1.5 text-sm transition-colors ${
-                  active
-                    ? "bg-primary font-bold text-foreground"
-                    : "text-docs-muted hover:bg-syntax-surface hover:text-background"
-                }`}
-              >
-                {item.title}
-              </Link>
-            );
-          })}
+                return (
+                  <Link
+                    key={item.to}
+                    to={item.to}
+                    className={`block px-2 py-1.5 text-sm transition-colors ${
+                      active
+                        ? "bg-primary font-bold text-foreground"
+                        : "text-docs-muted hover:bg-syntax-surface hover:text-background"
+                    }`}
+                  >
+                    {item.title}
+                  </Link>
+                );
+              })}
+            </div>
+          ))}
           {filtered.length === 0 ? <p className="px-2 py-1 text-xs text-syntax-muted">No matching docs.</p> : null}
         </nav>
       </aside>

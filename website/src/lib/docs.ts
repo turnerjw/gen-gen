@@ -4,99 +4,92 @@ export interface DocsNavItem {
   description: string;
   sourcePath: string;
   keywords: string[];
+  section: string;
 }
 
+export const docsSections = ["Getting Started", "Guides", "Integration", "Help"] as const;
+
+export type DocsSection = (typeof docsSections)[number];
+
 export const docsNav: DocsNavItem[] = [
-  {
-    title: "Overview",
-    to: "/docs",
-    description: "Roadmap, structure, and how docs map to product features.",
-    sourcePath: "website/src/content/docs/overview.md",
-    keywords: ["overview", "docs", "navigation"],
-  },
+  // Getting Started
   {
     title: "Getting Started",
-    to: "/docs/getting-started",
-    description: "Install, author your first data-gen file, and run generation.",
+    to: "/docs",
+    description: "Install gen-gen, create your first generator, and use it in a test.",
     sourcePath: "website/src/content/docs/getting-started.md",
-    keywords: ["install", "quickstart", "first run"],
+    keywords: ["install", "quickstart", "first run", "overrides"],
+    section: "Getting Started",
   },
   {
-    title: "CLI Reference",
-    to: "/docs/cli",
-    description: "Full command-line flags, watch mode, and examples.",
-    sourcePath: "website/src/content/docs/cli.md",
-    keywords: ["cli", "flags", "watch", "commands"],
+    title: "Why gen-gen?",
+    to: "/docs/why-gen-gen",
+    description: "The test data maintenance problem and how gen-gen solves it.",
+    sourcePath: "website/src/content/docs/why-gen-gen.md",
+    keywords: ["why", "philosophy", "maintenance", "test data"],
+    section: "Getting Started",
+  },
+
+  // Guides
+  {
+    title: "Using Your Generators",
+    to: "/docs/using-generators",
+    description: "Overrides, nested helpers, callbacks, composition, and special cases.",
+    sourcePath: "website/src/content/docs/using-generators.md",
+    keywords: ["overrides", "helpers", "callbacks", "composition", "ignore", "unions"],
+    section: "Guides",
   },
   {
-    title: "API Reference",
-    to: "/docs/api",
-    description: "Programmatic usage with generateDataFile options and result shape.",
-    sourcePath: "website/src/content/docs/api.md",
-    keywords: ["api", "generateDataFile", "typescript"],
-  },
-  {
-    title: "Vite Plugin",
-    to: "/docs/vite-plugin",
-    description: "Use gen-gen inside Vite dev/build workflows.",
-    sourcePath: "website/src/content/docs/vite-plugin.md",
-    keywords: ["vite", "plugin", "dev server"],
-  },
-  {
-    title: "Faker Overrides",
-    to: "/docs/faker-overrides",
-    description: "Override precedence, matching keys, and fakerStrategy behavior.",
-    sourcePath: "website/src/content/docs/faker-overrides.md",
-    keywords: ["faker", "overrides", "strategy", "precedence"],
-  },
-  {
-    title: "Presets",
-    to: "/docs/presets",
-    description: "Built-in type mapping presets: common and commerce.",
-    sourcePath: "website/src/content/docs/presets.md",
-    keywords: ["preset", "type mapping", "common", "commerce"],
-  },
-  {
-    title: "Advanced Behavior",
-    to: "/docs/advanced",
-    description: "Deep merge, ignore tags, helper ergonomics, unions, and policy controls.",
-    sourcePath: "website/src/content/docs/advanced.md",
-    keywords: ["deep merge", "ignore", "union", "helpers", "policy"],
+    title: "Configuration",
+    to: "/docs/configuration",
+    description: "Faker overrides, strategies, GenGenConfig, and type filters.",
+    sourcePath: "website/src/content/docs/configuration.md",
+    keywords: ["config", "faker", "overrides", "strategy", "deepMerge", "include", "exclude"],
+    section: "Guides",
   },
   {
     title: "Examples",
     to: "/docs/examples",
-    description: "Copy-paste examples aligned with /example folders.",
+    description: "Short, self-contained recipes for common scenarios.",
     sourcePath: "website/src/content/docs/examples.md",
-    keywords: ["examples", "copy paste", "sample"],
+    keywords: ["examples", "recipes", "patterns", "testing"],
+    section: "Guides",
   },
+
+  // Integration
+  {
+    title: "CLI Reference",
+    to: "/docs/cli",
+    description: "All 7 command-line flags with copy-paste examples.",
+    sourcePath: "website/src/content/docs/cli.md",
+    keywords: ["cli", "flags", "watch", "commands"],
+    section: "Integration",
+  },
+  {
+    title: "API Reference",
+    to: "/docs/api",
+    description: "Programmatic usage with generateDataFile.",
+    sourcePath: "website/src/content/docs/api.md",
+    keywords: ["api", "generateDataFile", "programmatic", "typescript"],
+    section: "Integration",
+  },
+  {
+    title: "Vite Plugin",
+    to: "/docs/vite-plugin",
+    description: "Run gen-gen automatically during Vite dev and build.",
+    sourcePath: "website/src/content/docs/vite-plugin.md",
+    keywords: ["vite", "plugin", "dev server", "build"],
+    section: "Integration",
+  },
+
+  // Help
   {
     title: "Troubleshooting",
     to: "/docs/troubleshooting",
-    description: "Common errors/warnings and concrete fixes.",
+    description: "Common warnings, errors, and their fixes.",
     sourcePath: "website/src/content/docs/troubleshooting.md",
-    keywords: ["errors", "warnings", "diagnostics"],
-  },
-  {
-    title: "Playground",
-    to: "/docs/playground",
-    description: "Playground scope, limits, starter snippets, and parse/generation errors.",
-    sourcePath: "website/src/content/docs/playground.md",
-    keywords: ["playground", "limitations", "single-file"],
-  },
-  {
-    title: "Release Notes",
-    to: "/docs/release-notes",
-    description: "Changelog and notable docs/feature updates.",
-    sourcePath: "website/src/content/docs/release-notes.md",
-    keywords: ["release", "changelog", "updates"],
-  },
-  {
-    title: "Docs QA Checklist",
-    to: "/docs/qa-checklist",
-    description: "Repeatable checks to keep docs snippets accurate.",
-    sourcePath: "website/src/content/docs/qa-checklist.md",
-    keywords: ["qa", "checklist", "validation"],
+    keywords: ["errors", "warnings", "diagnostics", "fixes"],
+    section: "Help",
   },
 ];
 

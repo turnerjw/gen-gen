@@ -1,8 +1,8 @@
 import {createFileRoute} from "@tanstack/react-router";
 
 import {MarkdownDoc} from "@/components/markdown-doc";
-import rawMd from "@/content/docs/playground.md?raw";
+import rawMd from "@/content/docs/why-gen-gen.md?raw";
 
-export const Route = createFileRoute("/docs/playground")({
+export const Route = createFileRoute("/docs/why-gen-gen")({
   component: () => <MarkdownDoc raw={rawMd} />,
 });

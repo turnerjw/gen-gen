@@ -1,37 +1,60 @@
 ---
 title: Vite Plugin Reference
-summary: genGenPlugin runs generation during Vite startup/build and watches relevant files for regeneration.
-keywords: [vite, plugin, dev server]
+summary: Run gen-gen automatically during Vite dev and build with the genGenPlugin.
+keywords: [vite, plugin, dev server, build]
 ---
+
+The Vite plugin runs gen-gen during `vite dev` and `vite build`, and watches for type changes during development.
+
+## Import
+
+```ts
+import { genGenPlugin } from "gen-gen/vite";
+```
 
 ## Setup
 
 ```ts
-import {defineConfig} from "vite";
-import {genGenPlugin} from "gen-gen";
+// vite.config.ts
+import { defineConfig } from "vite";
+import { genGenPlugin } from "gen-gen/vite";
 
 export default defineConfig({
   plugins: [
-    genGenPlugin({
-      input: "data-gen.ts",
-      failOnWarn: true,
-      watchDiagnostics: true,
-      deepMerge: true,
-      include: ["User", "Account"],
-      fakerOverrides: {
-        email: "faker.internet.email()",
-      },
-    }),
+    genGenPlugin(),
   ],
 });
 ```
 
-## Options
+## GenGenPluginOptions
 
-Plugin options mirror `generateDataFile` options with Vite-specific watch integration. Key options are `input`, `failOnWarn`, `propertyPolicy`, `deepMerge`, `typeMappingPresets`, `watchDiagnostics`, `include`, `exclude`, `fakerOverrides`, and `fakerStrategy`.
+```ts
+interface GenGenPluginOptions {
+  /** Path to the generator source file. Default: "data-gen.ts" */
+  input?: string;
 
-## Watch behavior
+  /** Exit with error if generation emits warnings. Default: false */
+  failOnWarn?: boolean;
+}
+```
 
-- When watched files change, generation runs again.
-- If generated output changed, plugin sends a full reload.
-- With `watchDiagnostics: true`, trigger file and per-run metrics are logged.
+All other configuration (faker overrides, strategies, deep merge, filters) lives inside the data-gen file. See [Configuration](/docs/configuration).
+
+## How it works
+
+1. **Build start** -- the plugin runs generation and writes the output. It registers all discovered source files as watch dependencies via Vite's `addWatchFile` API.
+
+2. **Dev server** -- the plugin listens for file changes through Vite's watcher. When a watched file changes, generation re-runs. If the output changed, the plugin triggers a full page reload so your tests or app pick up the new generators.
+
+## Example with options
+
+```ts
+export default defineConfig({
+  plugins: [
+    genGenPlugin({
+      input: "src/data-gen.ts",
+      failOnWarn: true,
+    }),
+  ],
+});
+```

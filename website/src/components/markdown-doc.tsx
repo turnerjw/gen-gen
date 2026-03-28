@@ -1,4 +1,5 @@
 import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import type {Language} from "prism-react-renderer";
 import {Link} from "@tanstack/react-router";
 
@@ -40,6 +41,7 @@ export function MarkdownDoc({raw}: MarkdownDocProps) {
   return (
     <DocsArticle title={frontmatter.title} summary={frontmatter.summary}>
       <ReactMarkdown
+        remarkPlugins={[remarkGfm]}
         components={{
           code({className, children, ...props}) {
             const match = /language-(\w+)/.exec(className || "");
@@ -88,6 +90,27 @@ export function MarkdownDoc({raw}: MarkdownDocProps) {
           },
           p({children}) {
             return <p>{children}</p>;
+          },
+          table({children}) {
+            return (
+              <div className="overflow-x-auto">
+                <table className="w-full border-collapse text-sm">{children}</table>
+              </div>
+            );
+          },
+          thead({children}) {
+            return <thead className="border-b border-docs-divider">{children}</thead>;
+          },
+          tr({children}) {
+            return <tr className="border-b border-docs-divider">{children}</tr>;
+          },
+          th({children}) {
+            return (
+              <th className="px-3 py-2 text-left font-semibold text-docs-heading">{children}</th>
+            );
+          },
+          td({children}) {
+            return <td className="px-3 py-2">{children}</td>;
           },
         }}
       >

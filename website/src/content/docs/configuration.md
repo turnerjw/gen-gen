@@ -119,11 +119,13 @@ Return one of:
 Control generator behavior with a `GenGenConfig` variable:
 
 ```ts
-const GenGenConfig = {
+import type { GenGenConfigOptions } from "gen-gen";
+
+const GenGenConfig: GenGenConfigOptions = {
   deepMerge: true,
   optionalProperties: "include",
   indexSignatures: "ignore",
-} as const;
+};
 ```
 
 ### Options

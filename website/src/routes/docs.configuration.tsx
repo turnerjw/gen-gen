@@ -1,8 +1,8 @@
 import {createFileRoute} from "@tanstack/react-router";
 
 import {MarkdownDoc} from "@/components/markdown-doc";
-import rawMd from "@/content/docs/faker-overrides.md?raw";
+import rawMd from "@/content/docs/configuration.md?raw";
 
-export const Route = createFileRoute("/docs/faker-overrides")({
+export const Route = createFileRoute("/docs/configuration")({
   component: () => <MarkdownDoc raw={rawMd} />,
 });

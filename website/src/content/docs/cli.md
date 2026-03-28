@@ -1,6 +1,6 @@
 ---
 title: CLI Reference
-summary: Complete command-line options, constraints, and copy-paste examples.
+summary: All 7 command-line flags with copy-paste examples.
 keywords: [cli, flags, watch, commands]
 ---
 
@@ -10,46 +10,74 @@ keywords: [cli, flags, watch, commands]
 gen-gen [options]
 ```
 
-## Options
+## Flags
 
-- `-i, --input <path>`: input source file (default: `data-gen.ts`)
-- `--cwd <path>`: working directory used to resolve `--input`
-- `--check`: exits `1` when generated section is stale
-- `--dry-run`: prints resulting file to stdout without writing
-- `--fail-on-warn`: fails generation if warnings exist
-- `--optional-properties <include|omit>`
-- `--readonly-properties <include|warn>`
-- `--index-signatures <ignore|warn>`
-- `--faker-strategy <path>`: loads module default export or named `fakerStrategy` export
-- `--preset <name[,name...]>`: `common`, `commerce`
-- `-w, --watch`: continuous regeneration
-- `--watch-diagnostics`: logs trigger source and per-run metrics
-- `--deep-merge`: deep-merge object overrides instead of shallow top-level spread
-- `--include <csv>`: include generators/types by filter keys
-- `--exclude <csv>`: exclude generators/types by filter keys
-- `--faker-override key=expression`: repeatable CLI override mapping
+| Flag | Short | Description |
+|---|---|---|
+| `--input <path>` | `-i` | Path to the generator source file. Default: `data-gen.ts` |
+| `--cwd <path>` | | Working directory used to resolve `--input` |
+| `--check` | | Exit with code 1 if the generated section is out of date. Does not write. |
+| `--dry-run` | | Print the resulting file content to stdout without writing. |
+| `--fail-on-warn` | | Exit with an error if generation produces any warnings. |
+| `--watch` | `-w` | Watch for file changes and regenerate automatically. |
+| `--help` | `-h` | Show the help message. |
 
 ## Examples
 
+### Single run
+
 ```bash
-# single run
-npx gen-gen --input example/basic/data-gen.ts
-
-# stale-check in CI
-npx gen-gen --input data-gen.ts --check
-
-# watch with diagnostics
-npx gen-gen --input data-gen.ts --watch --watch-diagnostics
-
-# deep merge + presets + filter
-npx gen-gen --input data-gen.ts --deep-merge --preset common,commerce --include User,Account
-
-# explicit faker override(s)
-npx gen-gen --input data-gen.ts --faker-override email=faker.internet.email()
+npx gen-gen --input src/data-gen.ts
 ```
 
-## Notes
+### CI freshness check
+
+Verify that generated code is up to date. Useful in CI pipelines.
+
+```bash
+npx gen-gen --input src/data-gen.ts --check
+```
+
+If the generated section doesn't match what gen-gen would produce, the process exits with code 1.
+
+### Preview without writing
+
+```bash
+npx gen-gen --input src/data-gen.ts --dry-run
+```
+
+### Fail on warnings in CI
+
+Combine with `--check` or use standalone to catch stale faker overrides, unmatched filters, or other issues.
+
+```bash
+npx gen-gen --input src/data-gen.ts --check --fail-on-warn
+```
+
+### Watch mode
+
+Continuously regenerate when your types or data-gen file change.
+
+```bash
+npx gen-gen --input src/data-gen.ts --watch
+```
+
+Watch mode automatically tracks all non-`node_modules`, non-`.d.ts` source files that the TypeScript compiler discovers. When any of them change, generation re-runs with an 80ms debounce.
+
+Set the `GEN_GEN_WATCH_DIAGNOSTICS=1` environment variable to log trigger files and per-run timing metrics.
+
+### Custom working directory
+
+```bash
+npx gen-gen --input data-gen.ts --cwd packages/my-package
+```
+
+## Constraints
 
 - `--watch` cannot be combined with `--check` or `--dry-run`.
-- Unknown include/exclude filters produce warnings (they do not silently fail).
-- Unused faker override keys also produce warnings to surface typos.
+- Unknown arguments cause an immediate error.
+- The default input file is `data-gen.ts` in the current working directory (or `--cwd`).
+
+## Configuration that lives in the file
+
+Many things that look like they might be CLI flags are actually configured inside your `data-gen.ts` file: `FakerOverrides`, `FakerStrategy`, `GenGenConfig` (deep merge, optional properties, index signatures), `IncludeGenerators`, `ExcludeGenerators`, and `ConcreteGenerics`. See [Configuration](/docs/configuration) for details.

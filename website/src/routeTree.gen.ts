@@ -13,18 +13,16 @@ import { Route as PlaygroundRouteImport } from './routes/playground'
 import { Route as DocsRouteImport } from './routes/docs'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as DocsIndexRouteImport } from './routes/docs.index'
+import { Route as DocsWhyGenGenRouteImport } from './routes/docs.why-gen-gen'
 import { Route as DocsVitePluginRouteImport } from './routes/docs.vite-plugin'
+import { Route as DocsUsingGeneratorsRouteImport } from './routes/docs.using-generators'
 import { Route as DocsTroubleshootingRouteImport } from './routes/docs.troubleshooting'
-import { Route as DocsReleaseNotesRouteImport } from './routes/docs.release-notes'
-import { Route as DocsQaChecklistRouteImport } from './routes/docs.qa-checklist'
-import { Route as DocsPresetsRouteImport } from './routes/docs.presets'
 import { Route as DocsPlaygroundRouteImport } from './routes/docs.playground'
 import { Route as DocsGettingStartedRouteImport } from './routes/docs.getting-started'
-import { Route as DocsFakerOverridesRouteImport } from './routes/docs.faker-overrides'
 import { Route as DocsExamplesRouteImport } from './routes/docs.examples'
+import { Route as DocsConfigurationRouteImport } from './routes/docs.configuration'
 import { Route as DocsCliRouteImport } from './routes/docs.cli'
 import { Route as DocsApiRouteImport } from './routes/docs.api'
-import { Route as DocsAdvancedRouteImport } from './routes/docs.advanced'
 
 const PlaygroundRoute = PlaygroundRouteImport.update({
   id: '/playground',
@@ -46,29 +44,24 @@ const DocsIndexRoute = DocsIndexRouteImport.update({
   path: '/',
   getParentRoute: () => DocsRoute,
 } as any)
+const DocsWhyGenGenRoute = DocsWhyGenGenRouteImport.update({
+  id: '/why-gen-gen',
+  path: '/why-gen-gen',
+  getParentRoute: () => DocsRoute,
+} as any)
 const DocsVitePluginRoute = DocsVitePluginRouteImport.update({
   id: '/vite-plugin',
   path: '/vite-plugin',
   getParentRoute: () => DocsRoute,
 } as any)
+const DocsUsingGeneratorsRoute = DocsUsingGeneratorsRouteImport.update({
+  id: '/using-generators',
+  path: '/using-generators',
+  getParentRoute: () => DocsRoute,
+} as any)
 const DocsTroubleshootingRoute = DocsTroubleshootingRouteImport.update({
   id: '/troubleshooting',
   path: '/troubleshooting',
-  getParentRoute: () => DocsRoute,
-} as any)
-const DocsReleaseNotesRoute = DocsReleaseNotesRouteImport.update({
-  id: '/release-notes',
-  path: '/release-notes',
-  getParentRoute: () => DocsRoute,
-} as any)
-const DocsQaChecklistRoute = DocsQaChecklistRouteImport.update({
-  id: '/qa-checklist',
-  path: '/qa-checklist',
-  getParentRoute: () => DocsRoute,
-} as any)
-const DocsPresetsRoute = DocsPresetsRouteImport.update({
-  id: '/presets',
-  path: '/presets',
   getParentRoute: () => DocsRoute,
 } as any)
 const DocsPlaygroundRoute = DocsPlaygroundRouteImport.update({
@@ -81,14 +74,14 @@ const DocsGettingStartedRoute = DocsGettingStartedRouteImport.update({
   path: '/getting-started',
   getParentRoute: () => DocsRoute,
 } as any)
-const DocsFakerOverridesRoute = DocsFakerOverridesRouteImport.update({
-  id: '/faker-overrides',
-  path: '/faker-overrides',
-  getParentRoute: () => DocsRoute,
-} as any)
 const DocsExamplesRoute = DocsExamplesRouteImport.update({
   id: '/examples',
   path: '/examples',
+  getParentRoute: () => DocsRoute,
+} as any)
+const DocsConfigurationRoute = DocsConfigurationRouteImport.update({
+  id: '/configuration',
+  path: '/configuration',
   getParentRoute: () => DocsRoute,
 } as any)
 const DocsCliRoute = DocsCliRouteImport.update({
@@ -101,45 +94,36 @@ const DocsApiRoute = DocsApiRouteImport.update({
   path: '/api',
   getParentRoute: () => DocsRoute,
 } as any)
-const DocsAdvancedRoute = DocsAdvancedRouteImport.update({
-  id: '/advanced',
-  path: '/advanced',
-  getParentRoute: () => DocsRoute,
-} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/docs': typeof DocsRouteWithChildren
   '/playground': typeof PlaygroundRoute
-  '/docs/advanced': typeof DocsAdvancedRoute
   '/docs/api': typeof DocsApiRoute
   '/docs/cli': typeof DocsCliRoute
+  '/docs/configuration': typeof DocsConfigurationRoute
   '/docs/examples': typeof DocsExamplesRoute
-  '/docs/faker-overrides': typeof DocsFakerOverridesRoute
   '/docs/getting-started': typeof DocsGettingStartedRoute
   '/docs/playground': typeof DocsPlaygroundRoute
-  '/docs/presets': typeof DocsPresetsRoute
-  '/docs/qa-checklist': typeof DocsQaChecklistRoute
-  '/docs/release-notes': typeof DocsReleaseNotesRoute
   '/docs/troubleshooting': typeof DocsTroubleshootingRoute
+  '/docs/using-generators': typeof DocsUsingGeneratorsRoute
   '/docs/vite-plugin': typeof DocsVitePluginRoute
+  '/docs/why-gen-gen': typeof DocsWhyGenGenRoute
   '/docs/': typeof DocsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/playground': typeof PlaygroundRoute
-  '/docs/advanced': typeof DocsAdvancedRoute
   '/docs/api': typeof DocsApiRoute
   '/docs/cli': typeof DocsCliRoute
+  '/docs/configuration': typeof DocsConfigurationRoute
   '/docs/examples': typeof DocsExamplesRoute
-  '/docs/faker-overrides': typeof DocsFakerOverridesRoute
   '/docs/getting-started': typeof DocsGettingStartedRoute
   '/docs/playground': typeof DocsPlaygroundRoute
-  '/docs/presets': typeof DocsPresetsRoute
-  '/docs/qa-checklist': typeof DocsQaChecklistRoute
-  '/docs/release-notes': typeof DocsReleaseNotesRoute
   '/docs/troubleshooting': typeof DocsTroubleshootingRoute
+  '/docs/using-generators': typeof DocsUsingGeneratorsRoute
   '/docs/vite-plugin': typeof DocsVitePluginRoute
+  '/docs/why-gen-gen': typeof DocsWhyGenGenRoute
   '/docs': typeof DocsIndexRoute
 }
 export interface FileRoutesById {
@@ -147,18 +131,16 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/docs': typeof DocsRouteWithChildren
   '/playground': typeof PlaygroundRoute
-  '/docs/advanced': typeof DocsAdvancedRoute
   '/docs/api': typeof DocsApiRoute
   '/docs/cli': typeof DocsCliRoute
+  '/docs/configuration': typeof DocsConfigurationRoute
   '/docs/examples': typeof DocsExamplesRoute
-  '/docs/faker-overrides': typeof DocsFakerOverridesRoute
   '/docs/getting-started': typeof DocsGettingStartedRoute
   '/docs/playground': typeof DocsPlaygroundRoute
-  '/docs/presets': typeof DocsPresetsRoute
-  '/docs/qa-checklist': typeof DocsQaChecklistRoute
-  '/docs/release-notes': typeof DocsReleaseNotesRoute
   '/docs/troubleshooting': typeof DocsTroubleshootingRoute
+  '/docs/using-generators': typeof DocsUsingGeneratorsRoute
   '/docs/vite-plugin': typeof DocsVitePluginRoute
+  '/docs/why-gen-gen': typeof DocsWhyGenGenRoute
   '/docs/': typeof DocsIndexRoute
 }
 export interface FileRouteTypes {
@@ -167,53 +149,47 @@ export interface FileRouteTypes {
     | '/'
     | '/docs'
     | '/playground'
-    | '/docs/advanced'
     | '/docs/api'
     | '/docs/cli'
+    | '/docs/configuration'
     | '/docs/examples'
-    | '/docs/faker-overrides'
     | '/docs/getting-started'
     | '/docs/playground'
-    | '/docs/presets'
-    | '/docs/qa-checklist'
-    | '/docs/release-notes'
     | '/docs/troubleshooting'
+    | '/docs/using-generators'
     | '/docs/vite-plugin'
+    | '/docs/why-gen-gen'
     | '/docs/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/playground'
-    | '/docs/advanced'
     | '/docs/api'
     | '/docs/cli'
+    | '/docs/configuration'
     | '/docs/examples'
-    | '/docs/faker-overrides'
     | '/docs/getting-started'
     | '/docs/playground'
-    | '/docs/presets'
-    | '/docs/qa-checklist'
-    | '/docs/release-notes'
     | '/docs/troubleshooting'
+    | '/docs/using-generators'
     | '/docs/vite-plugin'
+    | '/docs/why-gen-gen'
     | '/docs'
   id:
     | '__root__'
     | '/'
     | '/docs'
     | '/playground'
-    | '/docs/advanced'
     | '/docs/api'
     | '/docs/cli'
+    | '/docs/configuration'
     | '/docs/examples'
-    | '/docs/faker-overrides'
     | '/docs/getting-started'
     | '/docs/playground'
-    | '/docs/presets'
-    | '/docs/qa-checklist'
-    | '/docs/release-notes'
     | '/docs/troubleshooting'
+    | '/docs/using-generators'
     | '/docs/vite-plugin'
+    | '/docs/why-gen-gen'
     | '/docs/'
   fileRoutesById: FileRoutesById
 }
@@ -260,32 +236,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DocsVitePluginRouteImport
       parentRoute: typeof DocsRoute
     }
+    '/docs/why-gen-gen': {
+      id: '/docs/why-gen-gen'
+      path: '/why-gen-gen'
+      fullPath: '/docs/why-gen-gen'
+      preLoaderRoute: typeof DocsWhyGenGenRouteImport
+      parentRoute: typeof DocsRoute
+    }
+    '/docs/using-generators': {
+      id: '/docs/using-generators'
+      path: '/using-generators'
+      fullPath: '/docs/using-generators'
+      preLoaderRoute: typeof DocsUsingGeneratorsRouteImport
+      parentRoute: typeof DocsRoute
+    }
     '/docs/troubleshooting': {
       id: '/docs/troubleshooting'
       path: '/troubleshooting'
       fullPath: '/docs/troubleshooting'
       preLoaderRoute: typeof DocsTroubleshootingRouteImport
-      parentRoute: typeof DocsRoute
-    }
-    '/docs/release-notes': {
-      id: '/docs/release-notes'
-      path: '/release-notes'
-      fullPath: '/docs/release-notes'
-      preLoaderRoute: typeof DocsReleaseNotesRouteImport
-      parentRoute: typeof DocsRoute
-    }
-    '/docs/qa-checklist': {
-      id: '/docs/qa-checklist'
-      path: '/qa-checklist'
-      fullPath: '/docs/qa-checklist'
-      preLoaderRoute: typeof DocsQaChecklistRouteImport
-      parentRoute: typeof DocsRoute
-    }
-    '/docs/presets': {
-      id: '/docs/presets'
-      path: '/presets'
-      fullPath: '/docs/presets'
-      preLoaderRoute: typeof DocsPresetsRouteImport
       parentRoute: typeof DocsRoute
     }
     '/docs/playground': {
@@ -302,18 +271,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DocsGettingStartedRouteImport
       parentRoute: typeof DocsRoute
     }
-    '/docs/faker-overrides': {
-      id: '/docs/faker-overrides'
-      path: '/faker-overrides'
-      fullPath: '/docs/faker-overrides'
-      preLoaderRoute: typeof DocsFakerOverridesRouteImport
-      parentRoute: typeof DocsRoute
-    }
     '/docs/examples': {
       id: '/docs/examples'
       path: '/examples'
       fullPath: '/docs/examples'
       preLoaderRoute: typeof DocsExamplesRouteImport
+      parentRoute: typeof DocsRoute
+    }
+    '/docs/configuration': {
+      id: '/docs/configuration'
+      path: '/configuration'
+      fullPath: '/docs/configuration'
+      preLoaderRoute: typeof DocsConfigurationRouteImport
       parentRoute: typeof DocsRoute
     }
     '/docs/cli': {
@@ -330,45 +299,34 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DocsApiRouteImport
       parentRoute: typeof DocsRoute
     }
-    '/docs/advanced': {
-      id: '/docs/advanced'
-      path: '/advanced'
-      fullPath: '/docs/advanced'
-      preLoaderRoute: typeof DocsAdvancedRouteImport
-      parentRoute: typeof DocsRoute
-    }
   }
 }
 
 interface DocsRouteChildren {
-  DocsAdvancedRoute: typeof DocsAdvancedRoute
   DocsApiRoute: typeof DocsApiRoute
   DocsCliRoute: typeof DocsCliRoute
+  DocsConfigurationRoute: typeof DocsConfigurationRoute
   DocsExamplesRoute: typeof DocsExamplesRoute
-  DocsFakerOverridesRoute: typeof DocsFakerOverridesRoute
   DocsGettingStartedRoute: typeof DocsGettingStartedRoute
   DocsPlaygroundRoute: typeof DocsPlaygroundRoute
-  DocsPresetsRoute: typeof DocsPresetsRoute
-  DocsQaChecklistRoute: typeof DocsQaChecklistRoute
-  DocsReleaseNotesRoute: typeof DocsReleaseNotesRoute
   DocsTroubleshootingRoute: typeof DocsTroubleshootingRoute
+  DocsUsingGeneratorsRoute: typeof DocsUsingGeneratorsRoute
   DocsVitePluginRoute: typeof DocsVitePluginRoute
+  DocsWhyGenGenRoute: typeof DocsWhyGenGenRoute
   DocsIndexRoute: typeof DocsIndexRoute
 }
 
 const DocsRouteChildren: DocsRouteChildren = {
-  DocsAdvancedRoute: DocsAdvancedRoute,
   DocsApiRoute: DocsApiRoute,
   DocsCliRoute: DocsCliRoute,
+  DocsConfigurationRoute: DocsConfigurationRoute,
   DocsExamplesRoute: DocsExamplesRoute,
-  DocsFakerOverridesRoute: DocsFakerOverridesRoute,
   DocsGettingStartedRoute: DocsGettingStartedRoute,
   DocsPlaygroundRoute: DocsPlaygroundRoute,
-  DocsPresetsRoute: DocsPresetsRoute,
-  DocsQaChecklistRoute: DocsQaChecklistRoute,
-  DocsReleaseNotesRoute: DocsReleaseNotesRoute,
   DocsTroubleshootingRoute: DocsTroubleshootingRoute,
+  DocsUsingGeneratorsRoute: DocsUsingGeneratorsRoute,
   DocsVitePluginRoute: DocsVitePluginRoute,
+  DocsWhyGenGenRoute: DocsWhyGenGenRoute,
   DocsIndexRoute: DocsIndexRoute,
 }
 

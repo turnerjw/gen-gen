@@ -137,6 +137,48 @@ const FakerStrategy = (ctx) => {
 
 This applies to every `email` and string `id` property across all generated types in that file.
 
+## Enums
+
+TypeScript enums work automatically:
+
+```ts
+// types.ts
+export enum Status {
+  Draft = "draft",
+  Active = "active",
+  Closed = "closed",
+}
+
+export type Ticket = {
+  status: Status;
+  title: string;
+};
+
+// Generated: status: faker.helpers.arrayElement(["draft", "active", "closed"]) as Status
+
+// test -- pin to a specific value
+const ticket = generateTicket({ status: Status.Active });
+```
+
+## Branded types
+
+Branded primitives are cast correctly:
+
+```ts
+// types.ts
+export type UserId = string & { readonly __brand: "UserId" };
+export type AmountCents = number & { readonly __brand: "AmountCents" };
+
+export type Invoice = {
+  id: UserId;
+  total: AmountCents;
+  note?: string;
+};
+
+// Generated: id: faker.word.noun() as UserId
+// Generated: total: faker.number.int({ min: 1, max: 1000 }) as AmountCents
+```
+
 ## Skipping properties with @gen-gen-ignore
 
 Exclude internal or complex properties from generation:

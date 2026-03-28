@@ -229,18 +229,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DocsIndexRouteImport
       parentRoute: typeof DocsRoute
     }
-    '/docs/vite-plugin': {
-      id: '/docs/vite-plugin'
-      path: '/vite-plugin'
-      fullPath: '/docs/vite-plugin'
-      preLoaderRoute: typeof DocsVitePluginRouteImport
-      parentRoute: typeof DocsRoute
-    }
     '/docs/why-gen-gen': {
       id: '/docs/why-gen-gen'
       path: '/why-gen-gen'
       fullPath: '/docs/why-gen-gen'
       preLoaderRoute: typeof DocsWhyGenGenRouteImport
+      parentRoute: typeof DocsRoute
+    }
+    '/docs/vite-plugin': {
+      id: '/docs/vite-plugin'
+      path: '/vite-plugin'
+      fullPath: '/docs/vite-plugin'
+      preLoaderRoute: typeof DocsVitePluginRouteImport
       parentRoute: typeof DocsRoute
     }
     '/docs/using-generators': {

@@ -1,7 +1,7 @@
 ---
 title: Using Your Generators
 summary: How to call generated functions, pass overrides, use nested helpers, and handle special cases.
-keywords: [overrides, helpers, callbacks, ignore, unions]
+keywords: [overrides, helpers, callbacks, unions]
 ---
 
 Every type-only import in your `data-gen.ts` file produces a `generateX` function. This page covers how to call those functions and customize their output.
@@ -101,32 +101,4 @@ To pin a specific union variant in a test, just override the relevant field:
 const example = generateUnionExample({ status: "error" });
 ```
 
-## Excluding types with @gen-gen-ignore
-
-Add a `@gen-gen-ignore` JSDoc tag to skip an entire type or a specific property during generation.
-
-On a type -- gen-gen skips the type entirely:
-
-```ts
-/** @gen-gen-ignore */
-export type InternalOnly = {
-  token: string;
-};
-```
-
-On a property -- gen-gen emits an empty cast (`{} as T`) for that property:
-
-```ts
-export type Account = {
-  id: string;
-  /** @gen-gen-ignore */
-  profile: {
-    locale: string;
-    timezone: string;
-  };
-  email: string;
-};
-```
-
-The generated `generateAccount` will have `profile: {} as { locale: string; timezone: string }` -- you can override it in tests when needed.
 

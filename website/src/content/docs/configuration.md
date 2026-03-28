@@ -179,3 +179,32 @@ type ConcreteGenerics = [
 ```
 
 This generates `generateUserSummaryApiEnvelope` and `generateUserSummaryConnection`. The function name is derived from the type arguments and the generic type name.
+
+## @gen-gen-ignore
+
+Add a `@gen-gen-ignore` JSDoc tag to skip an entire type or a specific property during generation.
+
+On a type -- gen-gen skips the type entirely:
+
+```ts
+/** @gen-gen-ignore */
+export type InternalOnly = {
+  token: string;
+};
+```
+
+On a property -- gen-gen emits an empty cast (`{} as T`) for that property:
+
+```ts
+export type Account = {
+  id: string;
+  /** @gen-gen-ignore */
+  profile: {
+    locale: string;
+    timezone: string;
+  };
+  email: string;
+};
+```
+
+The generated `generateAccount` will have `profile: {} as { locale: string; timezone: string }` -- you can override it in tests when needed.

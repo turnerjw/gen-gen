@@ -1,57 +1,8 @@
 import {createFileRoute} from "@tanstack/react-router";
 
-import {CodeBlock} from "@/components/code-block";
-import {DocsArticle} from "@/components/docs-article";
+import {MarkdownDoc} from "@/components/markdown-doc";
+import rawMd from "@/content/docs/getting-started.md?raw";
 
 export const Route = createFileRoute("/docs/getting-started")({
-  component: DocsGettingStartedPage,
+  component: () => <MarkdownDoc raw={rawMd} />,
 });
-
-function DocsGettingStartedPage() {
-  return (
-    <DocsArticle
-      title="Getting Started"
-      summary="Install gen-gen, create a data-gen input file, and generate your first factories in under five minutes."
-    >
-      <section className="space-y-3">
-        <h2 className="text-xl font-semibold">1. Install</h2>
-        <CodeBlock language="bash" code={`npm install -D gen-gen typescript @faker-js/faker`} />
-      </section>
-
-      <section className="space-y-3">
-        <h2 className="text-xl font-semibold">2. Create input file</h2>
-        <p>Create `data-gen.ts` and import the types you want factory functions for:</p>
-        <CodeBlock
-          language="ts"
-          code={`import type {Pokemon} from "./types";
-
-/**
- * Generated below - DO NOT EDIT
- */`}
-        />
-      </section>
-
-      <section className="space-y-3">
-        <h2 className="text-xl font-semibold">3. Run generation</h2>
-        <CodeBlock language="bash" code={`npx gen-gen --input data-gen.ts`} />
-        <p>
-          `gen-gen` replaces everything after the marker and emits functions like `generatePokemon(overrides?)`.
-        </p>
-      </section>
-
-      <section className="space-y-3">
-        <h2 className="text-xl font-semibold">4. Use generated helpers</h2>
-        <CodeBlock
-          language="ts"
-          code={`const user = generateUser(({generateProfile}) => ({
-  profile: generateProfile({locale: "en-CA"}),
-}));`}
-        />
-        <p>
-          Helper callbacks include object helpers (`generateProfile`) and array-item helpers (`generateItemsItem`) for
-          nested object arrays.
-        </p>
-      </section>
-    </DocsArticle>
-  );
-}

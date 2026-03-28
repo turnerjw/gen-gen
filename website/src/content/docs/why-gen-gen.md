@@ -8,11 +8,13 @@ keywords: [why, philosophy, maintenance, test data]
 
 Every time you add a field to a type, you update every test fixture that uses it. If `User` gains a `preferences` object, you might touch 30 test files -- not because the tests care about preferences, but because TypeScript demands a complete object.
 
-This leads to three bad outcomes:
+This leads to a few bad outcomes:
 
 1. **Fixture maintenance scales with your schema.** One new field means N fixture updates across your test suite.
 2. **Test intent gets buried.** A test for "admin users see settings" has to construct a full user object. The reader has to scan past 15 irrelevant fields to find `role: "admin"`.
 3. **Test data goes stale.** Fixtures get copy-pasted, values become meaningless constants, and tests stop catching real bugs because every test uses the same hardcoded data.
+4. **Shared fixtures create hidden coupling.** To avoid repeating themselves, teams extract test data into a shared file or define it globally at the top of the test. Now changing one test's data can break another. Tests that should be independent aren't.
+5. **Global test data hides what matters.** When `testUser` is defined 50 lines above the test that uses it, the reader has to scroll up to understand what's being tested. The test no longer tells its own story.
 
 ## Without gen-gen
 

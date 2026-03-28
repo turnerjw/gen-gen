@@ -72,35 +72,6 @@ const event = generateEvent({
 });
 ```
 
-## Composing generators
-
-Use one generator's output as an override for another:
-
-```ts
-// types.ts
-export type UserSummary = {
-  id: string;
-  handle: string;
-  role: "admin" | "member";
-};
-
-export type ApiEnvelope<T> = {
-  data: T;
-  requestId: string;
-  error?: string;
-};
-
-// data-gen.ts
-import type { UserSummary, ApiEnvelope } from "./types";
-type ConcreteGenerics = [ApiEnvelope<UserSummary>];
-
-// test
-const envelope = generateUserSummaryApiEnvelope({
-  data: generateUserSummary({ role: "admin" }),
-  error: undefined,
-});
-```
-
 ## Callback helpers for nested objects
 
 Use the callback form to access typed helper functions:
@@ -165,79 +136,6 @@ const FakerStrategy = (ctx) => {
 ```
 
 This applies to every `email` and string `id` property across all generated types in that file.
-
-## Generic types
-
-Generic types require `ConcreteGenerics` entries:
-
-```ts
-// types.ts
-export type Edge<T> = { node: T; cursor: string };
-export type Connection<T> = { edges: Edge<T>[]; hasNextPage: boolean };
-
-// data-gen.ts
-import type { UserSummary, Connection } from "./types";
-type ConcreteGenerics = [Connection<UserSummary>];
-
-// Generates: generateUserSummaryConnection(overrides?)
-```
-
-## Filtering types
-
-Control which imported types get generators:
-
-```ts
-// data-gen.ts
-import type { Account, Profile, Session, Envelope } from "./types";
-
-// Only generate for Account and Session
-type IncludeGenerators = [Account, Session];
-
-// Or exclude specific types
-type ExcludeGenerators = [Envelope<Session>];
-```
-
-## Enums
-
-TypeScript enums work automatically:
-
-```ts
-// types.ts
-export enum Status {
-  Draft = "draft",
-  Active = "active",
-  Closed = "closed",
-}
-
-export type Ticket = {
-  status: Status;
-  title: string;
-};
-
-// Generated: status: faker.helpers.arrayElement(["draft", "active", "closed"]) as Status
-
-// test -- pin to a specific value
-const ticket = generateTicket({ status: Status.Active });
-```
-
-## Branded types
-
-Branded primitives are cast correctly:
-
-```ts
-// types.ts
-export type UserId = string & { readonly __brand: "UserId" };
-export type AmountCents = number & { readonly __brand: "AmountCents" };
-
-export type Invoice = {
-  id: UserId;
-  total: AmountCents;
-  note?: string;
-};
-
-// Generated: id: faker.word.noun() as UserId
-// Generated: total: faker.number.int({ min: 1, max: 1000 }) as AmountCents
-```
 
 ## Skipping properties with @gen-gen-ignore
 

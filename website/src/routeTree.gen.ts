@@ -17,7 +17,6 @@ import { Route as DocsWhyGenGenRouteImport } from './routes/docs.why-gen-gen'
 import { Route as DocsVitePluginRouteImport } from './routes/docs.vite-plugin'
 import { Route as DocsUsingGeneratorsRouteImport } from './routes/docs.using-generators'
 import { Route as DocsTroubleshootingRouteImport } from './routes/docs.troubleshooting'
-import { Route as DocsPlaygroundRouteImport } from './routes/docs.playground'
 import { Route as DocsGettingStartedRouteImport } from './routes/docs.getting-started'
 import { Route as DocsExamplesRouteImport } from './routes/docs.examples'
 import { Route as DocsConfigurationRouteImport } from './routes/docs.configuration'
@@ -64,11 +63,6 @@ const DocsTroubleshootingRoute = DocsTroubleshootingRouteImport.update({
   path: '/troubleshooting',
   getParentRoute: () => DocsRoute,
 } as any)
-const DocsPlaygroundRoute = DocsPlaygroundRouteImport.update({
-  id: '/playground',
-  path: '/playground',
-  getParentRoute: () => DocsRoute,
-} as any)
 const DocsGettingStartedRoute = DocsGettingStartedRouteImport.update({
   id: '/getting-started',
   path: '/getting-started',
@@ -104,7 +98,6 @@ export interface FileRoutesByFullPath {
   '/docs/configuration': typeof DocsConfigurationRoute
   '/docs/examples': typeof DocsExamplesRoute
   '/docs/getting-started': typeof DocsGettingStartedRoute
-  '/docs/playground': typeof DocsPlaygroundRoute
   '/docs/troubleshooting': typeof DocsTroubleshootingRoute
   '/docs/using-generators': typeof DocsUsingGeneratorsRoute
   '/docs/vite-plugin': typeof DocsVitePluginRoute
@@ -119,7 +112,6 @@ export interface FileRoutesByTo {
   '/docs/configuration': typeof DocsConfigurationRoute
   '/docs/examples': typeof DocsExamplesRoute
   '/docs/getting-started': typeof DocsGettingStartedRoute
-  '/docs/playground': typeof DocsPlaygroundRoute
   '/docs/troubleshooting': typeof DocsTroubleshootingRoute
   '/docs/using-generators': typeof DocsUsingGeneratorsRoute
   '/docs/vite-plugin': typeof DocsVitePluginRoute
@@ -136,7 +128,6 @@ export interface FileRoutesById {
   '/docs/configuration': typeof DocsConfigurationRoute
   '/docs/examples': typeof DocsExamplesRoute
   '/docs/getting-started': typeof DocsGettingStartedRoute
-  '/docs/playground': typeof DocsPlaygroundRoute
   '/docs/troubleshooting': typeof DocsTroubleshootingRoute
   '/docs/using-generators': typeof DocsUsingGeneratorsRoute
   '/docs/vite-plugin': typeof DocsVitePluginRoute
@@ -154,7 +145,6 @@ export interface FileRouteTypes {
     | '/docs/configuration'
     | '/docs/examples'
     | '/docs/getting-started'
-    | '/docs/playground'
     | '/docs/troubleshooting'
     | '/docs/using-generators'
     | '/docs/vite-plugin'
@@ -169,7 +159,6 @@ export interface FileRouteTypes {
     | '/docs/configuration'
     | '/docs/examples'
     | '/docs/getting-started'
-    | '/docs/playground'
     | '/docs/troubleshooting'
     | '/docs/using-generators'
     | '/docs/vite-plugin'
@@ -185,7 +174,6 @@ export interface FileRouteTypes {
     | '/docs/configuration'
     | '/docs/examples'
     | '/docs/getting-started'
-    | '/docs/playground'
     | '/docs/troubleshooting'
     | '/docs/using-generators'
     | '/docs/vite-plugin'
@@ -257,13 +245,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DocsTroubleshootingRouteImport
       parentRoute: typeof DocsRoute
     }
-    '/docs/playground': {
-      id: '/docs/playground'
-      path: '/playground'
-      fullPath: '/docs/playground'
-      preLoaderRoute: typeof DocsPlaygroundRouteImport
-      parentRoute: typeof DocsRoute
-    }
     '/docs/getting-started': {
       id: '/docs/getting-started'
       path: '/getting-started'
@@ -308,7 +289,6 @@ interface DocsRouteChildren {
   DocsConfigurationRoute: typeof DocsConfigurationRoute
   DocsExamplesRoute: typeof DocsExamplesRoute
   DocsGettingStartedRoute: typeof DocsGettingStartedRoute
-  DocsPlaygroundRoute: typeof DocsPlaygroundRoute
   DocsTroubleshootingRoute: typeof DocsTroubleshootingRoute
   DocsUsingGeneratorsRoute: typeof DocsUsingGeneratorsRoute
   DocsVitePluginRoute: typeof DocsVitePluginRoute
@@ -322,7 +302,6 @@ const DocsRouteChildren: DocsRouteChildren = {
   DocsConfigurationRoute: DocsConfigurationRoute,
   DocsExamplesRoute: DocsExamplesRoute,
   DocsGettingStartedRoute: DocsGettingStartedRoute,
-  DocsPlaygroundRoute: DocsPlaygroundRoute,
   DocsTroubleshootingRoute: DocsTroubleshootingRoute,
   DocsUsingGeneratorsRoute: DocsUsingGeneratorsRoute,
   DocsVitePluginRoute: DocsVitePluginRoute,

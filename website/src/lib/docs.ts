@@ -91,14 +91,6 @@ export const docsNav: DocsNavItem[] = [
     keywords: ["errors", "warnings", "diagnostics", "fixes"],
     section: "Help",
   },
-  {
-    title: "Playground",
-    to: "/docs/playground",
-    description: "Interactive playground for trying gen-gen.",
-    sourcePath: "website/src/content/docs/playground.md",
-    keywords: ["playground", "interactive", "try", "single-file"],
-    section: "Help",
-  },
 ];
 
 const GITHUB_EDIT_BASE = "https://github.com/justinturner/gen-gen/blob/main";

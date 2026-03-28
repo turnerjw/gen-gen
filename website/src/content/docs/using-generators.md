@@ -1,7 +1,7 @@
 ---
 title: Using Your Generators
-summary: How to call generated functions, pass overrides, use nested helpers, compose generators, and handle special cases.
-keywords: [overrides, helpers, callbacks, composition, ignore, unions]
+summary: How to call generated functions, pass overrides, use nested helpers, and handle special cases.
+keywords: [overrides, helpers, callbacks, ignore, unions]
 ---
 
 Every type-only import in your `data-gen.ts` file produces a `generateX` function. This page covers how to call those functions and customize their output.
@@ -35,8 +35,8 @@ Overrides are type-safe -- TypeScript will error if you pass a field that doesn'
 When your type has nested objects, overrides are deep-merged by default. You only need to specify the nested fields you care about.
 
 ```ts
-// Given: type User = { profile: { name: string; settings: { theme: string; locale: string } } }
-const user = generateUserFixture({
+// Given: type UserProfile = { profile: { name: string; settings: { theme: string; locale: string } } }
+const user = generateUserProfile({
   profile: { settings: { theme: "dark" } },
 });
 // profile.settings.theme is "dark"
@@ -64,9 +64,14 @@ const user = generateCheckoutDraft((helpers) => ({
 Helpers follow the naming convention `generate{PropertyName}` for nested object properties. For array items with object elements, you also get `generate{PropertyName}Item` and `generate{PropertyName}Items`:
 
 ```ts
-const connection = generateUserSummaryConnection((helpers) => ({
-  edges: [
-    { node: helpers.generateEdgesItem({ cursor: "abc" }).node, cursor: "abc" },
+const draft = generateCheckoutDraft((helpers) => ({
+  shipping: {
+    address: helpers.generateAddress({ city: "Portland" }),
+    instructions: "Leave at door",
+  },
+  items: [
+    helpers.generateItemsItem({ quantity: 3 }),
+    helpers.generateItemsItem({ quantity: 1 }),
   ],
 }));
 ```
@@ -74,35 +79,11 @@ const connection = generateUserSummaryConnection((helpers) => ({
 The `generate{PropertyName}Items` helper generates multiple items at once:
 
 ```ts
-const connection = generateUserSummaryConnection((helpers) => ({
-  edges: helpers.generateEdgesItems(5),
+const draft = generateCheckoutDraft((helpers) => ({
+  items: helpers.generateItemsItems(5),
 }));
-// edges has exactly 5 items with random data
+// items has exactly 5 items with random data
 ```
-
-## Composing generators
-
-When one type references another, gen-gen generates separate functions for each and wires them together. You can compose them yourself too.
-
-```ts
-// If ApiEnvelope<T> = { data: T; requestId: string; error?: string }
-// and UserSummary is a separate type
-
-const envelope = generateUserSummaryApiEnvelope({
-  data: generateUserSummary({ role: "admin" }),
-});
-```
-
-For generic types, add concrete instantiations to `ConcreteGenerics` in your data-gen file:
-
-```ts
-type ConcreteGenerics = [
-  ApiEnvelope<UserSummary>,
-  Connection<UserSummary>,
-];
-```
-
-This generates `generateUserSummaryApiEnvelope` and `generateUserSummaryConnection`.
 
 ## Union types
 
@@ -149,34 +130,3 @@ export type Account = {
 
 The generated `generateAccount` will have `profile: {} as { locale: string; timezone: string }` -- you can override it in tests when needed.
 
-## Include and exclude filters
-
-Control which types get generators using `IncludeGenerators` and `ExcludeGenerators` type aliases in your data-gen file:
-
-```ts
-// Only generate for these types (from all imported types)
-type IncludeGenerators = [Account, Session];
-
-// Exclude a specific type even if it would otherwise be included
-type ExcludeGenerators = [Envelope<Session>];
-```
-
-Filter matching is case-insensitive and works on type names, function names, and the `generate` prefix is stripped for matching. See [Troubleshooting](/docs/troubleshooting) for warnings about unmatched filters.
-
-## Enums
-
-TypeScript enums (both string and numeric) are supported. gen-gen uses `faker.helpers.arrayElement(...)` to pick a random member:
-
-```ts
-// Given: enum Status { Draft = "draft", Active = "active", Closed = "closed" }
-// Generated: status: faker.helpers.arrayElement(["draft", "active", "closed"]) as Status
-```
-
-## Branded types
-
-Branded types (like `string & { readonly __brand: "UserId" }`) are recognized. gen-gen generates the appropriate primitive value and casts it:
-
-```ts
-// Given: type UserId = string & { readonly __brand: "UserId" }
-// Generated: id: faker.word.noun() as UserId
-```

@@ -46,8 +46,6 @@ All other configuration (faker overrides, strategies, deep merge, filters) lives
 
 2. **Dev server** -- the plugin listens for file changes through Vite's watcher. When a watched file changes, generation re-runs. If the output changed, the plugin triggers a full page reload so your tests or app pick up the new generators.
 
-3. **Watch diagnostics** -- set the `GEN_GEN_WATCH_DIAGNOSTICS=1` environment variable to log trigger files and per-run timing metrics.
-
 ## Example with options
 
 ```ts
@@ -60,7 +58,3 @@ export default defineConfig({
   ],
 });
 ```
-
-## TypeScript LanguageService reuse
-
-The plugin creates and reuses a TypeScript LanguageService internally, which avoids re-creating the full TypeScript program on every regeneration during development. This is handled automatically -- no configuration needed.

@@ -64,8 +64,6 @@ npx gen-gen --input src/data-gen.ts --watch
 
 Watch mode automatically tracks all non-`node_modules`, non-`.d.ts` source files that the TypeScript compiler discovers. When any of them change, generation re-runs with an 80ms debounce.
 
-Set the `GEN_GEN_WATCH_DIAGNOSTICS=1` environment variable to log trigger files and per-run timing metrics.
-
 ### Custom working directory
 
 ```bash
@@ -77,7 +75,3 @@ npx gen-gen --input data-gen.ts --cwd packages/my-package
 - `--watch` cannot be combined with `--check` or `--dry-run`.
 - Unknown arguments cause an immediate error.
 - The default input file is `data-gen.ts` in the current working directory (or `--cwd`).
-
-## Configuration that lives in the file
-
-Many things that look like they might be CLI flags are actually configured inside your `data-gen.ts` file: `FakerOverrides`, `FakerStrategy`, `GenGenConfig` (deep merge, optional properties, index signatures), `IncludeGenerators`, `ExcludeGenerators`, and `ConcreteGenerics`. See [Configuration](/docs/configuration) for details.

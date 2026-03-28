@@ -10,12 +10,14 @@ gen-gen is configured entirely inside your `data-gen.ts` file. There are no sepa
 
 Override the default Faker expression for specific properties by declaring a `FakerOverrides` variable. Keys are dot-separated paths that match properties during generation.
 
+gen-gen emits a `TypedFakerOverrides` type into your file that provides autocomplete for valid override keys. You should always type your `FakerOverrides` variable with it:
+
 ```ts
-const FakerOverrides = {
+const FakerOverrides: TypedFakerOverrides = {
   "User.id": () => faker.string.uuid(),
   "User.createdAt": () => faker.date.recent().toISOString(),
   email: () => faker.internet.email(),
-} as const;
+};
 ```
 
 ### Key matching
@@ -58,16 +60,6 @@ Override values can be:
   "User.age": "42"
   // Generated: age: 42
   ```
-
-### Generated type safety
-
-gen-gen emits a `FakerOverridePaths` type and a `TypedFakerOverrides` type into your file. These provide autocomplete for valid override keys. You can optionally type your `FakerOverrides` variable with `TypedFakerOverrides` to get compile-time key validation:
-
-```ts
-const FakerOverrides: TypedFakerOverrides = {
-  "User.id": () => faker.string.uuid(),
-};
-```
 
 ### Unused override warnings
 

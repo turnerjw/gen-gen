@@ -1,5 +1,5 @@
 {
-  "name": "gen-gen",
+  "name": "@trnr/gen-gen",
   "version": "0.1.0",
   "description": "Generate Faker-based test data builders from imported TypeScript types.",
   "type": "module",
@@ -22,6 +22,9 @@
   "files": [
     "dist"
   ],
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "dev": "tsc -p tsconfig.json --watch --preserveWatchOutput",
     "build": "tsc -p tsconfig.json",

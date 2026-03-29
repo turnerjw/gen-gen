@@ -62,18 +62,11 @@ Options:
 - `--check`: exits with code `1` if the generated section is stale
 - `--dry-run`: print resulting file contents instead of writing
 - `--fail-on-warn`: fail generation when warnings are emitted
-- `--optional-properties <include|omit>`: include or omit optional properties in generated base objects
-- `--readonly-properties <include|warn>`: include readonly properties and optionally emit warnings
-- `--index-signatures <ignore|warn>`: ignore or warn when index signatures are not materialized
-- `--preset <name[,name...]>`: enable type-mapping presets (`common`, `commerce`)
 - `-w, --watch`: run continuously and regenerate on changes
-- `--watch-diagnostics`: log watch trigger + per-run timing/count metrics
-- `--deep-merge`: merge overrides deeply instead of shallow spread
-- `--include`: comma-separated filters to include specific generators/types
-- `--exclude`: comma-separated filters to exclude specific generators/types
-- `--faker-override`: `key=expression` override for generated values (repeatable, CLI)
 
 ### Deep Merge Behavior
+
+Deep merge can be enabled via in-file `GenGenConfig` (see [In-file configuration](#in-file-configuration)).
 
 By default, generated functions merge overrides with a shallow spread.
 
@@ -86,7 +79,7 @@ return {
 };
 ```
 
-With `--deep-merge` (or plugin `deepMerge: true`), nested objects are merged recursively.
+With `deepMerge: true`, nested objects are merged recursively.
 
 Deep merge:
 
@@ -137,40 +130,16 @@ When to keep default shallow merge:
 
 ### Property Policy
 
-Policy options let you control generation behavior for optional properties, readonly properties, and index signatures.
+Property policy options can be configured via in-file `GenGenConfig` (see [In-file configuration](#in-file-configuration)).
 
-Defaults:
+Available policies:
 
-- `optionalProperties: "include"`
-- `readonlyProperties: "include"`
-- `indexSignatures: "ignore"`
-
-CLI example:
-
-```bash
-gen-gen --input data-gen.ts \
-  --optional-properties omit \
-  --readonly-properties warn \
-  --index-signatures warn
-```
-
-Plugin example:
-
-```ts
-genGenPlugin({
-  input: "data-gen.ts",
-  propertyPolicy: {
-    optionalProperties: "omit",
-    readonlyProperties: "warn",
-    indexSignatures: "warn",
-  },
-});
-```
+- `optionalProperties: "include" | "omit"` — include or omit optional properties in generated base objects (default: `"include"`)
+- `indexSignatures: "ignore" | "warn"` — ignore or warn when index signatures are not materialized (default: `"ignore"`)
 
 Behavior notes:
 
 - `optionalProperties: "omit"` skips optional fields in generated base objects.
-- `readonlyProperties: "warn"` still includes readonly fields, but emits warnings.
 - `indexSignatures: "warn"` emits warnings when index signatures are present but not materialized into generated keys.
 
 ### Branded/Opaque Primitive Aliases
@@ -224,12 +193,6 @@ export default defineConfig({
     genGenPlugin({
       input: "data-gen.ts",
       failOnWarn: true,
-      watchDiagnostics: true,
-      deepMerge: true,
-      include: ["User", "Account"],
-      fakerOverrides: {
-        email: "faker.internet.email()",
-      },
     }),
   ],
 });
@@ -245,8 +208,9 @@ The input file should:
 2. Optionally define `type ConcreteGenerics = [...]` to specify concrete generic instantiations.
 3. Optionally define `type IncludeGenerators = [...]` / `type ExcludeGenerators = [...]` to filter generated targets.
 4. Optionally define `const FakerOverrides = { ... }` for per-field/per-type faker expressions.
-5. Optionally add `@gen-gen-ignore` on types/properties to skip generation behavior.
-6. Include a marker comment containing `Generated below - DO NOT EDIT`.
+5. Optionally define `const GenGenConfig = { ... }` for generation options (deep merge, property policies).
+6. Optionally add `@gen-gen-ignore` on types/properties to skip generation behavior.
+7. Include a marker comment containing `Generated below - DO NOT EDIT`.
 
 Example:
 
@@ -295,32 +259,11 @@ type Account = {
 - On a type/interface/class declaration: skip generating that root generator.
 - On a property: skip faker generation for that field and emit a typed placeholder value.
 
-Filter matching accepts type text and generator names. For example:
-
-- `--include Pokemon,generateParty`
-- `--exclude APIResponse<Pokemon>,generatePokemonAPIResponse`
+Filter matching accepts type text and generator names. For example, `IncludeGenerators` or `ExcludeGenerators` can reference types like `Pokemon` or generator names like `generateParty`.
 
 If a configured include/exclude filter does not match any generation target, `gen-gen` emits a warning.
 
-Use function values in `FakerOverrides` (and plugin/API `fakerOverrides`) for type-safe expressions. String values from CLI are still supported for convenience.
-
-For pluggable logic across many fields, use API/plugin `fakerStrategy` (a callback receiving field metadata and returning an override expression).
-
-CLI also supports strategy modules:
-
-```bash
-gen-gen --input data-gen.ts --faker-strategy ./faker-strategy.ts
-```
-
-The module should export a default function (or named `fakerStrategy`) with the same strategy signature.
-
-Preset example:
-
-```bash
-gen-gen --input data-gen.ts --preset common,commerce
-```
-
-Preset + strategy can be combined. Strategy still wins over preset matches, and direct `FakerOverrides` win over both.
+Use function values in `FakerOverrides` for type-safe expressions.
 
 Faker override keys are matched in this order:
 
@@ -331,32 +274,23 @@ Faker override keys are matched in this order:
 
 Unused faker override keys also emit warnings, which helps catch typos in override paths.
 
-`fakerStrategy` runs only when no direct `FakerOverrides` key matched.
+### In-file configuration
 
-Example:
+Use `const GenGenConfig = { ... } as const` in your input file to configure generation behavior:
 
 ```ts
-generateDataFile({
-  input: "data-gen.ts",
-  fakerStrategy(ctx) {
-    if (ctx.rootTypeText === "User" && ctx.path === "id") {
-      return {expression: "faker.string.uuid()", invokeMode: "raw"};
-    }
-    if (ctx.path.endsWith("email")) {
-      return (faker) => faker.internet.email();
-    }
-    return undefined;
-  },
-});
+const GenGenConfig = {
+  deepMerge: true,
+  optionalProperties: "omit",
+  indexSignatures: "warn",
+} as const;
 ```
 
-CLI example:
+Available options:
 
-```bash
-gen-gen --input data-gen.ts \\
-  --faker-override email=faker.internet.email() \\
-  --faker-override Pokemon.id=faker.number.int({min:10000,max:99999})
-```
+- `deepMerge` (boolean): merge overrides deeply instead of shallow spread (default: `false`)
+- `optionalProperties` (`"include"` | `"omit"`): include or omit optional properties (default: `"include"`)
+- `indexSignatures` (`"ignore"` | `"warn"`): behavior for index signatures (default: `"ignore"`)
 
 ### Generic naming
 
@@ -365,9 +299,28 @@ For concrete generic types, function names are built from generic arguments in o
 - `B<A>` -> `generateAB`
 - `A<B, C, D>` -> `generateBCDA`
 
+## API
+
+```ts
+import {generateDataFile} from "gen-gen";
+
+const result = await generateDataFile({
+  input: "data-gen.ts",
+  cwd: process.cwd(),
+  write: true,
+  failOnWarn: false,
+});
+
+console.log(result.changed);      // whether the file was modified
+console.log(result.warnings);     // any warnings emitted
+console.log(result.content);      // the full file content
+console.log(result.watchedFiles); // files that should trigger regeneration
+```
+
 ## Development
 
 ```bash
-npm run build
-npm run typecheck
+bun run build
+bun run typecheck
+bun test
 ```

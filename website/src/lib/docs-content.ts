@@ -50,15 +50,52 @@ function stripMarkdown(md: string): string {
   );
 }
 
-export interface SearchableDoc {
-  nav: DocsNavItem;
+export interface SearchableSection {
+  heading: string | null;
+  slug: string | null;
   body: string;
 }
 
-export const searchableDocs: SearchableDoc[] = docsNav.map((nav) => ({
-  nav,
-  body: stripMarkdown(rawByPath[nav.sourcePath] ?? ""),
-}));
+export interface SearchableDoc {
+  nav: DocsNavItem;
+  body: string;
+  sections: SearchableSection[];
+}
+
+function buildSections(raw: string): SearchableSection[] {
+  const body = raw.replace(/^---[\s\S]*?---\n?/, "");
+  const sections: SearchableSection[] = [];
+  // Split on h2/h3 headings, keeping the heading in the result
+  const parts = body.split(/^(?=#{2,3}\s+)/m);
+
+  for (const part of parts) {
+    const headingMatch = part.match(/^(#{2,3})\s+(.+)$/m);
+    if (headingMatch) {
+      const text = headingMatch[2].replace(/[*_`]/g, "").trim();
+      sections.push({
+        heading: text,
+        slug: slugify(text),
+        body: stripMarkdown(part),
+      });
+    } else {
+      // Content before the first heading
+      const stripped = stripMarkdown(part);
+      if (stripped) {
+        sections.push({heading: null, slug: null, body: stripped});
+      }
+    }
+  }
+  return sections;
+}
+
+export const searchableDocs: SearchableDoc[] = docsNav.map((nav) => {
+  const raw = rawByPath[nav.sourcePath] ?? "";
+  return {
+    nav,
+    body: stripMarkdown(raw),
+    sections: buildSections(raw),
+  };
+});
 
 export function slugify(text: string): string {
   return text

@@ -10,6 +10,8 @@ interface SearchResult {
   doc: SearchableDoc;
   snippet: string;
   matchStart: number;
+  hash: string | null;
+  sectionHeading: string | null;
 }
 
 function getSnippet(body: string, query: string, contextLen = 90): {snippet: string; matchStart: number} | null {
@@ -117,14 +119,31 @@ export function DocsSearch({open, onOpenChange}: {open: boolean; onOpenChange: (
       const metaHaystack = [doc.nav.title, doc.nav.description, ...doc.nav.keywords].join(" ");
       const metaMatch = metaHaystack.toLowerCase().includes(normalized);
 
-      // Check body content
-      const bodySnippet = getSnippet(doc.body, normalized);
+      // Search through sections to find the best match with its heading
+      let bestSection: {snippet: string; matchStart: number; hash: string | null; heading: string | null} | null = null;
+      for (const section of doc.sections) {
+        const sectionSnippet = getSnippet(section.body, normalized);
+        if (sectionSnippet) {
+          bestSection = {
+            snippet: sectionSnippet.snippet,
+            matchStart: sectionSnippet.matchStart,
+            hash: section.slug,
+            heading: section.heading,
+          };
+          break;
+        }
+      }
 
-      if (bodySnippet) {
-        matches.push({doc, snippet: bodySnippet.snippet, matchStart: bodySnippet.matchStart});
+      if (bestSection) {
+        matches.push({
+          doc,
+          snippet: bestSection.snippet,
+          matchStart: bestSection.matchStart,
+          hash: bestSection.hash,
+          sectionHeading: bestSection.heading,
+        });
       } else if (metaMatch) {
-        // Use description as snippet when match is in metadata only
-        matches.push({doc, snippet: doc.nav.description, matchStart: -1});
+        matches.push({doc, snippet: doc.nav.description, matchStart: -1, hash: null, sectionHeading: null});
       }
     }
 
@@ -132,10 +151,17 @@ export function DocsSearch({open, onOpenChange}: {open: boolean; onOpenChange: (
   }, [query]);
 
   const handleSelect = useCallback(
-    (to: string) => {
+    (to: string, hash: string | null) => {
       onOpenChange(false);
-      navigate({to}).then(() => {
-        window.scrollTo(0, 0);
+      navigate({to, hash: hash ? hash : undefined}).then(() => {
+        if (hash) {
+          // Give the page a moment to render, then scroll to the heading
+          requestAnimationFrame(() => {
+            document.getElementById(hash)?.scrollIntoView({behavior: "smooth"});
+          });
+        } else {
+          window.scrollTo(0, 0);
+        }
       });
     },
     [navigate, onOpenChange],
@@ -181,15 +207,20 @@ export function DocsSearch({open, onOpenChange}: {open: boolean; onOpenChange: (
 
           {results.map((result) => (
             <Command.Item
-              key={result.doc.nav.to}
-              value={result.doc.nav.to}
-              onSelect={() => handleSelect(result.doc.nav.to)}
+              key={`${result.doc.nav.to}${result.hash ? `#${result.hash}` : ""}`}
+              value={`${result.doc.nav.to}${result.hash ? `#${result.hash}` : ""}`}
+              onSelect={() => handleSelect(result.doc.nav.to, result.hash)}
               className={cn(
                 "cursor-pointer rounded px-3 py-2 text-sm",
                 "aria-selected:bg-syntax-surface",
               )}
             >
-              <div className="font-semibold text-background">{result.doc.nav.title}</div>
+              <div className="font-semibold text-background">
+                {result.doc.nav.title}
+                {result.sectionHeading && (
+                  <span className="font-normal text-syntax-muted"> &rsaquo; {result.sectionHeading}</span>
+                )}
+              </div>
               <div className="mt-0.5 text-xs text-docs-muted">
                 <HighlightedSnippet snippet={result.snippet} query={query.trim()} />
               </div>

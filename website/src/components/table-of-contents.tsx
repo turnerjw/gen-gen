@@ -38,12 +38,16 @@ export function TableOfContents({headings}: TableOfContentsProps) {
 function useActiveHeading(headings: TocHeading[]): string | null {
   const [active, setActive] = useState<string | null>(headings[0]?.slug ?? null);
 
+  // Reset active heading when the page changes
+  useEffect(() => {
+    setActive(headings[0]?.slug ?? null);
+  }, [headings]);
+
   useEffect(() => {
     if (headings.length === 0) return;
 
     const observer = new IntersectionObserver(
       (entries) => {
-        // Find the first heading that is intersecting (visible)
         for (const entry of entries) {
           if (entry.isIntersecting) {
             setActive(entry.target.id);
@@ -54,12 +58,18 @@ function useActiveHeading(headings: TocHeading[]): string | null {
       {rootMargin: "-80px 0px -60% 0px", threshold: 0},
     );
 
-    for (const heading of headings) {
-      const el = document.getElementById(heading.slug);
-      if (el) observer.observe(el);
-    }
+    // Defer observation to next frame so the new page's DOM is ready
+    const raf = requestAnimationFrame(() => {
+      for (const heading of headings) {
+        const el = document.getElementById(heading.slug);
+        if (el) observer.observe(el);
+      }
+    });
 
-    return () => observer.disconnect();
+    return () => {
+      cancelAnimationFrame(raf);
+      observer.disconnect();
+    };
   }, [headings]);
 
   return active;

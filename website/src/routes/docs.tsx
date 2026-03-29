@@ -1,7 +1,10 @@
 import {Link, Outlet, createFileRoute, useLocation} from "@tanstack/react-router";
-import {useMemo, useState} from "react";
+import {useCallback, useMemo, useState} from "react";
 
+import {DocsSearch, DocsSearchTrigger} from "@/components/docs-search";
+import {TableOfContents} from "@/components/table-of-contents";
 import {docsNav, docsSections} from "@/lib/docs";
+import {getHeadingsForRoute} from "@/lib/docs-content";
 
 export const Route = createFileRoute("/docs")({
   component: DocsLayout,
@@ -9,51 +12,40 @@ export const Route = createFileRoute("/docs")({
 
 function DocsLayout() {
   const location = useLocation();
-  const [query, setQuery] = useState("");
-
-  const filtered = useMemo(() => {
-    const normalized = query.trim().toLowerCase();
-    if (!normalized) {
-      return docsNav;
-    }
-
-    return docsNav.filter((item) => {
-      const haystack = [item.title, item.description, item.section, ...item.keywords].join(" ").toLowerCase();
-      return haystack.includes(normalized);
-    });
-  }, [query]);
+  const [searchOpen, setSearchOpen] = useState(false);
 
   const groupedBySection = useMemo(() => {
-    const groups: { section: string; items: typeof filtered }[] = [];
+    const groups: {section: string; items: typeof docsNav}[] = [];
     for (const section of docsSections) {
-      const items = filtered.filter((item) => item.section === section);
+      const items = docsNav.filter((item) => item.section === section);
       if (items.length > 0) {
-        groups.push({ section, items });
+        groups.push({section, items});
       }
     }
     return groups;
-  }, [filtered]);
+  }, []);
+
+  const headings = useMemo(() => getHeadingsForRoute(location.pathname), [location.pathname]);
+
+  const handleOpenChange = useCallback((open: boolean) => {
+    setSearchOpen(open);
+  }, []);
 
   return (
-    <div className="grid min-h-[calc(100vh-var(--header-height))] gap-0 bg-docs-surface md:grid-cols-[260px_1fr]">
+    <div className="grid min-h-[calc(100vh-var(--header-height))] gap-0 bg-docs-surface md:grid-cols-[260px_1fr] xl:grid-cols-[260px_1fr_200px]">
       {/* Sidebar */}
       <aside className="space-y-3 border-b-brand border-r-0 border-docs-divider bg-foreground p-4 text-sm text-background md:sticky md:top-[var(--header-height)] md:h-[calc(100vh-var(--header-height))] md:overflow-y-auto md:border-b-0 md:border-r-brand md:border-r-docs-divider">
         <div>
           <div className="font-display text-lg uppercase tracking-display">Documentation</div>
-          <p className="mt-1 text-xs uppercase tracking-nav text-syntax-muted">CLI, API, plugin, and behavior reference.</p>
+          {/* <p className="mt-1 text-xs uppercase tracking-nav text-syntax-muted">CLI, API, plugin, and behavior reference.</p> */}
         </div>
 
-        <input
-          value={query}
-          onChange={(event) => setQuery(event.target.value)}
-          placeholder="Filter docs"
-          className="w-full border-brand border-syntax-border bg-syntax-surface px-2 py-1.5 text-sm text-background outline-none placeholder:text-[#555] focus:border-primary"
-        />
+        <DocsSearchTrigger onClick={() => setSearchOpen(true)} />
 
         <nav className="flex flex-col gap-0.5 pr-1">
           {groupedBySection.map((group) => (
             <div key={group.section} className="mt-3 first:mt-0">
-              <div className="px-2 pb-1 text-xs font-semibold uppercase tracking-nav text-syntax-muted">{group.section}</div>
+              <div className="mx-2 mb-1 border-b border-syntax-muted pb-1 text-xs font-semibold uppercase tracking-nav text-syntax-muted">{group.section}</div>
               {group.items.map((item) => {
                 const active =
                   location.pathname === item.to ||
@@ -75,7 +67,6 @@ function DocsLayout() {
               })}
             </div>
           ))}
-          {filtered.length === 0 ? <p className="px-2 py-1 text-xs text-syntax-muted">No matching docs.</p> : null}
         </nav>
       </aside>
 
@@ -85,6 +76,14 @@ function DocsLayout() {
           <Outlet />
         </div>
       </section>
+
+      {/* Table of contents */}
+      <aside className="hidden p-4 pt-14 xl:sticky xl:top-[var(--header-height)] xl:block xl:h-[calc(100vh-var(--header-height))] xl:overflow-y-auto">
+        <TableOfContents headings={headings} />
+      </aside>
+
+      {/* Command palette */}
+      <DocsSearch open={searchOpen} onOpenChange={handleOpenChange} />
     </div>
   );
 }

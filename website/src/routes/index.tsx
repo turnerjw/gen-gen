@@ -196,7 +196,7 @@ function HomePage() {
           style={{background: "radial-gradient(ellipse at 0% 0%, hsla(345, 100%, 55%, 0.5) 0%, transparent 55%), radial-gradient(ellipse at 100% 100%, hsla(345, 80%, 45%, 0.35) 0%, transparent 50%), hsl(0, 0%, 4%)"}}
         >
           <span className="mb-2 text-[11px] font-bold uppercase tracking-label text-syntax-comment">Install</span>
-          <code className="text-lg text-syntax-identifier"><span className="text-primary">$</span> npm install gen-gen --save-dev</code>
+          <code className="text-lg text-syntax-identifier"><span className="text-primary">$</span> npm install @trnr/gen-gen --save-dev</code>
         </div>
       </div>
 

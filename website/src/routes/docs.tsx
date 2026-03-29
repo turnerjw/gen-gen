@@ -1,6 +1,7 @@
 import {Link, Outlet, createFileRoute, useLocation} from "@tanstack/react-router";
-import {useMemo, useState} from "react";
+import {useCallback, useMemo, useState} from "react";
 
+import {DocsSearch, DocsSearchTrigger} from "@/components/docs-search";
 import {docsNav, docsSections} from "@/lib/docs";
 
 export const Route = createFileRoute("/docs")({
@@ -9,30 +10,22 @@ export const Route = createFileRoute("/docs")({
 
 function DocsLayout() {
   const location = useLocation();
-  const [query, setQuery] = useState("");
-
-  const filtered = useMemo(() => {
-    const normalized = query.trim().toLowerCase();
-    if (!normalized) {
-      return docsNav;
-    }
-
-    return docsNav.filter((item) => {
-      const haystack = [item.title, item.description, item.section, ...item.keywords].join(" ").toLowerCase();
-      return haystack.includes(normalized);
-    });
-  }, [query]);
+  const [searchOpen, setSearchOpen] = useState(false);
 
   const groupedBySection = useMemo(() => {
-    const groups: { section: string; items: typeof filtered }[] = [];
+    const groups: {section: string; items: typeof docsNav}[] = [];
     for (const section of docsSections) {
-      const items = filtered.filter((item) => item.section === section);
+      const items = docsNav.filter((item) => item.section === section);
       if (items.length > 0) {
-        groups.push({ section, items });
+        groups.push({section, items});
       }
     }
     return groups;
-  }, [filtered]);
+  }, []);
+
+  const handleOpenChange = useCallback((open: boolean) => {
+    setSearchOpen(open);
+  }, []);
 
   return (
     <div className="grid min-h-[calc(100vh-var(--header-height))] gap-0 bg-docs-surface md:grid-cols-[260px_1fr]">
@@ -43,12 +36,7 @@ function DocsLayout() {
           <p className="mt-1 text-xs uppercase tracking-nav text-syntax-muted">CLI, API, plugin, and behavior reference.</p>
         </div>
 
-        <input
-          value={query}
-          onChange={(event) => setQuery(event.target.value)}
-          placeholder="Filter docs"
-          className="w-full border-brand border-syntax-border bg-syntax-surface px-2 py-1.5 text-sm text-background outline-none placeholder:text-[#555] focus:border-primary"
-        />
+        <DocsSearchTrigger onClick={() => setSearchOpen(true)} />
 
         <nav className="flex flex-col gap-0.5 pr-1">
           {groupedBySection.map((group) => (
@@ -75,7 +63,6 @@ function DocsLayout() {
               })}
             </div>
           ))}
-          {filtered.length === 0 ? <p className="px-2 py-1 text-xs text-syntax-muted">No matching docs.</p> : null}
         </nav>
       </aside>
 
@@ -85,6 +72,9 @@ function DocsLayout() {
           <Outlet />
         </div>
       </section>
+
+      {/* Command palette */}
+      <DocsSearch open={searchOpen} onOpenChange={handleOpenChange} />
     </div>
   );
 }

@@ -37,7 +37,7 @@ function DocsLayout() {
       <aside className="space-y-3 border-b-brand border-r-0 border-docs-divider bg-foreground p-4 text-sm text-background md:sticky md:top-[var(--header-height)] md:h-[calc(100vh-var(--header-height))] md:overflow-y-auto md:border-b-0 md:border-r-brand md:border-r-docs-divider">
         <div>
           <div className="font-display text-lg uppercase tracking-display">Documentation</div>
-          <p className="mt-1 text-xs uppercase tracking-nav text-syntax-muted">CLI, API, plugin, and behavior reference.</p>
+          {/* <p className="mt-1 text-xs uppercase tracking-nav text-syntax-muted">CLI, API, plugin, and behavior reference.</p> */}
         </div>
 
         <DocsSearchTrigger onClick={() => setSearchOpen(true)} />
@@ -45,7 +45,7 @@ function DocsLayout() {
         <nav className="flex flex-col gap-0.5 pr-1">
           {groupedBySection.map((group) => (
             <div key={group.section} className="mt-3 first:mt-0">
-              <div className="px-2 pb-1 text-xs font-semibold uppercase tracking-nav text-syntax-muted">{group.section}</div>
+              <div className="mx-2 mb-1 border-b border-syntax-muted pb-1 text-xs font-semibold uppercase tracking-nav text-syntax-muted">{group.section}</div>
               {group.items.map((item) => {
                 const active =
                   location.pathname === item.to ||

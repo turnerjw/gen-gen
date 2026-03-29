@@ -2,7 +2,9 @@ import {Link, Outlet, createFileRoute, useLocation} from "@tanstack/react-router
 import {useCallback, useMemo, useState} from "react";
 
 import {DocsSearch, DocsSearchTrigger} from "@/components/docs-search";
+import {TableOfContents} from "@/components/table-of-contents";
 import {docsNav, docsSections} from "@/lib/docs";
+import {getHeadingsForRoute} from "@/lib/docs-content";
 
 export const Route = createFileRoute("/docs")({
   component: DocsLayout,
@@ -23,12 +25,14 @@ function DocsLayout() {
     return groups;
   }, []);
 
+  const headings = useMemo(() => getHeadingsForRoute(location.pathname), [location.pathname]);
+
   const handleOpenChange = useCallback((open: boolean) => {
     setSearchOpen(open);
   }, []);
 
   return (
-    <div className="grid min-h-[calc(100vh-var(--header-height))] gap-0 bg-docs-surface md:grid-cols-[260px_1fr]">
+    <div className="grid min-h-[calc(100vh-var(--header-height))] gap-0 bg-docs-surface md:grid-cols-[260px_1fr] xl:grid-cols-[260px_1fr_200px]">
       {/* Sidebar */}
       <aside className="space-y-3 border-b-brand border-r-0 border-docs-divider bg-foreground p-4 text-sm text-background md:sticky md:top-[var(--header-height)] md:h-[calc(100vh-var(--header-height))] md:overflow-y-auto md:border-b-0 md:border-r-brand md:border-r-docs-divider">
         <div>
@@ -72,6 +76,11 @@ function DocsLayout() {
           <Outlet />
         </div>
       </section>
+
+      {/* Table of contents */}
+      <aside className="hidden p-4 pt-14 xl:sticky xl:top-[var(--header-height)] xl:block xl:h-[calc(100vh-var(--header-height))] xl:overflow-y-auto">
+        <TableOfContents headings={headings} />
+      </aside>
 
       {/* Command palette */}
       <DocsSearch open={searchOpen} onOpenChange={handleOpenChange} />

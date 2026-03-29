@@ -1,4 +1,4 @@
-import {type DocsNavItem, docsNav} from "@/lib/docs";
+import {type DocsNavItem, docsNav, getCurrentDoc} from "@/lib/docs";
 
 import apiMd from "@/content/docs/api.md?raw";
 import cliMd from "@/content/docs/cli.md?raw";
@@ -59,3 +59,39 @@ export const searchableDocs: SearchableDoc[] = docsNav.map((nav) => ({
   nav,
   body: stripMarkdown(rawByPath[nav.sourcePath] ?? ""),
 }));
+
+export function slugify(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/[^\w\s-]/g, "")
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-")
+    .trim();
+}
+
+export interface TocHeading {
+  level: 2 | 3;
+  text: string;
+  slug: string;
+}
+
+function extractHeadings(raw: string): TocHeading[] {
+  const body = raw.replace(/^---[\s\S]*?---\n?/, "");
+  // Remove code blocks so we don't pick up headings inside them
+  const withoutCode = body.replace(/```[\s\S]*?```/g, "");
+  const headings: TocHeading[] = [];
+  for (const match of withoutCode.matchAll(/^(#{2,3})\s+(.+)$/gm)) {
+    const level = match[1].length as 2 | 3;
+    const text = match[2].replace(/[*_`]/g, "").trim();
+    headings.push({level, text, slug: slugify(text)});
+  }
+  return headings;
+}
+
+export function getHeadingsForRoute(pathname: string): TocHeading[] {
+  const doc = getCurrentDoc(pathname);
+  if (!doc) return [];
+  const raw = rawByPath[doc.sourcePath];
+  if (!raw) return [];
+  return extractHeadings(raw);
+}

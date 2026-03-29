@@ -5,6 +5,7 @@ import {Link} from "@tanstack/react-router";
 
 import {DocsArticle} from "@/components/docs-article";
 import {CodeBlock} from "@/components/code-block";
+import {slugify} from "@/lib/docs-content";
 
 interface Frontmatter {
   title: string;
@@ -29,6 +30,17 @@ function parseFrontmatter(raw: string): {frontmatter: Frontmatter; body: string}
     : [];
 
   return {frontmatter: {title, summary, keywords}, body};
+}
+
+function extractText(node: React.ReactNode): string {
+  if (typeof node === "string") return node;
+  if (typeof node === "number") return String(node);
+  if (!node) return "";
+  if (Array.isArray(node)) return node.map(extractText).join("");
+  if (typeof node === "object" && "props" in node) {
+    return extractText((node as React.ReactElement<{children?: React.ReactNode}>).props.children);
+  }
+  return "";
 }
 
 interface MarkdownDocProps {
@@ -77,10 +89,14 @@ export function MarkdownDoc({raw}: MarkdownDocProps) {
             );
           },
           h2({children}) {
-            return <h2 className="text-xl font-semibold">{children}</h2>;
+            const text = typeof children === "string" ? children : extractText(children);
+            const id = slugify(text);
+            return <h2 id={id} className="text-xl font-semibold scroll-mt-[calc(var(--header-height)+2rem)]">{children}</h2>;
           },
           h3({children}) {
-            return <h3 className="text-base font-semibold">{children}</h3>;
+            const text = typeof children === "string" ? children : extractText(children);
+            const id = slugify(text);
+            return <h3 id={id} className="text-base font-semibold scroll-mt-[calc(var(--header-height)+2rem)]">{children}</h3>;
           },
           ul({children}) {
             return <ul className="list-disc space-y-1 pl-5">{children}</ul>;

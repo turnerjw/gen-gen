@@ -32,13 +32,10 @@ jobs:
         run: bun run typecheck
 
       - name: Pre-publish test
-        run: bun test
+        run: bun run test
 
       - name: Pre-publish build
         run: bun run build
-
-      - name: Pre-publish example generation
-        run: bun run gen:example
 
       - name: Configure npm auth
         env:

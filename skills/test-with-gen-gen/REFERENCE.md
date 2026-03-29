@@ -123,7 +123,7 @@ export type Account = {
 ## Vite plugin
 
 ```ts
-import { genGenPlugin } from "gen-gen/vite";
+import { genGenPlugin } from "@trnr/gen-gen/vite";
 
 export default defineConfig({
   plugins: [genGenPlugin({ input: "src/data-gen.ts" })],

@@ -5,11 +5,11 @@
     "website"
   ],
   "scripts": {
-    "dev": "bun run --filter gen-gen dev & bun run --filter gen-gen-website dev",
-    "build": "bun run --filter gen-gen build",
-    "typecheck": "bun run --filter gen-gen typecheck",
-    "test": "bun run --filter gen-gen test",
-    "check": "bun run --filter gen-gen typecheck && bun run --filter gen-gen test && bun run --filter gen-gen-website typecheck && bun run --filter gen-gen-website build",
+    "dev": "bun run --filter @trnr/gen-gen dev & bun run --filter gen-gen-website dev",
+    "build": "bun run --filter @trnr/gen-gen build",
+    "typecheck": "bun run --filter @trnr/gen-gen typecheck",
+    "test": "bun run --filter @trnr/gen-gen test",
+    "check": "bun run --filter @trnr/gen-gen typecheck && bun run --filter @trnr/gen-gen test && bun run --filter gen-gen-website typecheck && bun run --filter gen-gen-website build",
     "web:dev": "bun run --filter gen-gen-website dev",
     "web:build": "bun run --filter gen-gen-website build",
     "web:typecheck": "bun run --filter gen-gen-website typecheck",

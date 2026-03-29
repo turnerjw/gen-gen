@@ -124,7 +124,7 @@ The release workflow needs `contents: write`, `pull-requests: write`, and `id-to
 Two items from the original release plan remain incomplete:
 
 1. **Dry-run publish in CI** -- Add a `changeset publish --dry-run` step to the CI workflow so publish problems are caught before the actual release.
-2. **Verify npm install in a clean fixture project** -- Set up an automated post-publish verification that installs `gen-gen` in a fresh project and runs a generation cycle.
+2. **Verify npm install in a clean fixture project** -- Set up an automated post-publish verification that installs `@trnr/gen-gen` in a fresh project and runs a generation cycle.
 
 ### Codex skill
 

@@ -79,7 +79,7 @@ Create a feature branch off `main`. There is no enforced naming scheme, but desc
 
 ### Adding a changeset
 
-If your change affects the published `gen-gen` package (bug fix, new feature, breaking change), add a changeset:
+If your change affects the published `@trnr/gen-gen` package (bug fix, new feature, breaking change), add a changeset:
 
 ```bash
 bun run changeset

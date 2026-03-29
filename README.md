@@ -7,7 +7,7 @@ Track implemented and planned features in [PROGRESS.md](./PROGRESS.md).
 ## Install
 
 ```bash
-npm install -D gen-gen typescript @faker-js/faker
+npm install -D @trnr/gen-gen typescript @faker-js/faker
 ```
 
 ## Quick example
@@ -53,7 +53,7 @@ gen-gen --input example/basic/data-gen.ts
 
 ```ts
 import { defineConfig } from "vite";
-import { genGenPlugin } from "gen-gen";
+import { genGenPlugin } from "@trnr/gen-gen";
 
 export default defineConfig({
   plugins: [
@@ -141,7 +141,7 @@ Function names are built from generic arguments followed by the base type:
 ## API
 
 ```ts
-import { generateDataFile } from "gen-gen";
+import { generateDataFile } from "@trnr/gen-gen";
 
 const result = await generateDataFile({
   input: "data-gen.ts",

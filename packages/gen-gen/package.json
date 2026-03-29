@@ -1,6 +1,6 @@
 {
   "name": "@trnr/gen-gen",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Generate Faker-based test data builders from imported TypeScript types.",
   "type": "module",
   "main": "./dist/index.js",

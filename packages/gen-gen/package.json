@@ -16,8 +16,13 @@
       "import": "./dist/vite-plugin.js"
     }
   },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/turnerjw/gen-gen",
+    "directory": "packages/gen-gen"
+  },
   "bin": {
-    "gen-gen": "./dist/cli.js"
+    "gen-gen": "dist/cli.js"
   },
   "files": [
     "dist"

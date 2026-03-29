@@ -32,7 +32,7 @@ jobs:
         run: bun run typecheck
 
       - name: Pre-publish test
-        run: bun test
+        run: bun run test
 
       - name: Pre-publish build
         run: bun run build

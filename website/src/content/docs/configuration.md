@@ -119,7 +119,7 @@ Return one of:
 Control generator behavior with a `GenGenConfig` variable:
 
 ```ts
-import type { GenGenConfigOptions } from "gen-gen";
+import type { GenGenConfigOptions } from "@trnr/gen-gen";
 
 const GenGenConfig: GenGenConfigOptions = {
   deepMerge: true,

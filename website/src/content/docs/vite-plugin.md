@@ -9,7 +9,7 @@ The Vite plugin runs gen-gen during `vite dev` and `vite build`, and watches for
 ## Import
 
 ```ts
-import { genGenPlugin } from "gen-gen/vite";
+import { genGenPlugin } from "@trnr/gen-gen/vite";
 ```
 
 ## Setup
@@ -17,7 +17,7 @@ import { genGenPlugin } from "gen-gen/vite";
 ```ts
 // vite.config.ts
 import { defineConfig } from "vite";
-import { genGenPlugin } from "gen-gen/vite";
+import { genGenPlugin } from "@trnr/gen-gen/vite";
 
 export default defineConfig({
   plugins: [

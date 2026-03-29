@@ -9,10 +9,10 @@ Use the programmatic API for custom build scripts, CI pipelines, or integration 
 ## Import
 
 ```ts
-import { generateDataFile } from "gen-gen";
+import { generateDataFile } from "@trnr/gen-gen";
 ```
 
-The main entry point `gen-gen` exports:
+The main entry point `@trnr/gen-gen` exports:
 
 - `generateDataFile` -- the core generation function
 - `GenerateOptions` -- options type
@@ -21,7 +21,7 @@ The main entry point `gen-gen` exports:
 - `FakerStrategyContext` -- strategy context type
 - `FakerStrategyResult` -- strategy result type
 
-The Vite plugin is exported from a separate entry point: `gen-gen/vite`.
+The Vite plugin is exported from a separate entry point: `@trnr/gen-gen/vite`.
 
 ## GenerateOptions
 
@@ -70,7 +70,7 @@ interface GenerateResult {
 ## Example: build script
 
 ```ts
-import { generateDataFile } from "gen-gen";
+import { generateDataFile } from "@trnr/gen-gen";
 
 const result = await generateDataFile({
   input: "src/data-gen.ts",

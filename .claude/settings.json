@@ -28,5 +28,18 @@
       "Bash(rm -rf *)",
       "Bash(gh pr merge *)"
     ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "jq -r '.tool_input.file_path // .tool_response.filePath' | { read -r f; if echo \"$f\" | grep -q '/packages/'; then changeset_files=$(git diff --name-only main -- '.changeset/*.md' 2>/dev/null | grep -v README.md); if [ -z \"$changeset_files\" ]; then printf '{\"hookSpecificOutput\":{\"hookEventName\":\"PostToolUse\",\"additionalContext\":\"REMINDER: You edited a file under packages/ but there is no changeset file yet on this branch. Before finishing, create a changeset in .changeset/ (YAML frontmatter with package name + bump type, then a description).\"}}'; fi; fi; }"
+          }
+        ]
+      }
+    ]
   }
 }

@@ -28,8 +28,8 @@ function RootLayout() {
         <nav aria-label="Primary" className="flex h-full items-center pr-4">
           <Link to="/docs" className={navLinkClass}>Docs</Link>
           <Link to="/playground" className={navLinkClass}>Playground</Link>
-          <a className={navLinkClass} href="https://www.npmjs.com/package/gen-gen" target="_blank" rel="noreferrer">npm</a>
-          <a className={navLinkClass} href="https://github.com/justinturner/gen-gen" target="_blank" rel="noreferrer">GitHub</a>
+          <a className={navLinkClass} href="https://www.npmjs.com/package/@trnr/gen-gen" target="_blank" rel="noreferrer">npm</a>
+          <a className={navLinkClass} href="https://github.com/turnerjw/gen-gen" target="_blank" rel="noreferrer">GitHub</a>
         </nav>
       </header>
 
@@ -45,8 +45,8 @@ function RootLayout() {
           <p className="mt-2 text-xs uppercase tracking-label text-muted-foreground">Type-safe test factory generator</p>
         </div>
         <div className="flex gap-6">
-          <a href="https://github.com/justinturner/gen-gen" target="_blank" rel="noreferrer" className="text-[11px] uppercase tracking-nav text-muted-foreground no-underline transition-colors hover:text-primary">GitHub</a>
-          <a href="https://www.npmjs.com/package/gen-gen" target="_blank" rel="noreferrer" className="text-[11px] uppercase tracking-nav text-muted-foreground no-underline transition-colors hover:text-primary">npm</a>
+          <a href="https://github.com/turnerjw/gen-gen" target="_blank" rel="noreferrer" className="text-[11px] uppercase tracking-nav text-muted-foreground no-underline transition-colors hover:text-primary">GitHub</a>
+          <a href="https://www.npmjs.com/package/@trnr/gen-gen" target="_blank" rel="noreferrer" className="text-[11px] uppercase tracking-nav text-muted-foreground no-underline transition-colors hover:text-primary">npm</a>
         </div>
       </footer>
       <TanStackRouterDevtools position="bottom-right" />

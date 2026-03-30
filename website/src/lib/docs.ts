@@ -93,7 +93,7 @@ export const docsNav: DocsNavItem[] = [
   },
 ];
 
-const GITHUB_EDIT_BASE = "https://github.com/justinturner/gen-gen/blob/main";
+const GITHUB_EDIT_BASE = "https://github.com/turnerjw/gen-gen/blob/main";
 
 function normalizePath(pathname: string): string {
   if (pathname !== "/" && pathname.endsWith("/")) {

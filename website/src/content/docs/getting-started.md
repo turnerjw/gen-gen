@@ -9,7 +9,7 @@ gen-gen reads your TypeScript types and generates fully-typed factory functions 
 ## Install
 
 ```bash
-npm install --save-dev gen-gen @faker-js/faker
+npm install --save-dev @trnr/gen-gen @faker-js/faker
 ```
 
 ## 1. Define your types

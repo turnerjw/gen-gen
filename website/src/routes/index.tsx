@@ -1,5 +1,5 @@
 import {createFileRoute} from "@tanstack/react-router";
-import {useCallback, useState} from "react";
+import {useCallback, useEffect, useRef, useState} from "react";
 
 export const Route = createFileRoute("/")({
   component: HomePage,
@@ -36,11 +36,32 @@ function generateUserData(nameOverride: string) {
   };
 }
 
+/* ── Typewriter animation names ── */
+
+const DEMO_NAMES = [
+  "John TypeScript",
+  "Bingus",
+  "Green Gobbler",
+  "Jane Doe",
+  "Captain Override",
+];
+
+const TYPE_SPEED = 80;
+const DELETE_SPEED = 50;
+const PAUSE_AFTER_TYPE = 3000;
+const PAUSE_AFTER_DELETE = 400;
+
 /* ── Guided demo component ── */
 
 function GuidedDemo() {
-  const [nameOverride, setNameOverride] = useState("John Gen-Gen");
-  const [userData, setUserData] = useState(() => generateUserData("John Gen-Gen"));
+  const [nameOverride, setNameOverride] = useState(DEMO_NAMES[0]);
+  const [userData, setUserData] = useState(() => generateUserData(DEMO_NAMES[0]));
+  const [isAnimating, setIsAnimating] = useState(true);
+  const [showCaret, setShowCaret] = useState(true);
+  const userInteracted = useRef(false);
+  const animationTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const nameIndexRef = useRef(0);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const regenerate = useCallback(() => {
     setUserData(generateUserData(nameOverride));
@@ -54,6 +75,77 @@ function GuidedDemo() {
       email: `"${randomEmail(value)}"`,
     }));
   }
+
+  function stopAnimation() {
+    userInteracted.current = true;
+    setIsAnimating(false);
+    setShowCaret(false);
+    if (animationTimer.current) {
+      clearTimeout(animationTimer.current);
+      animationTimer.current = null;
+    }
+  }
+
+  useEffect(() => {
+    if (!isAnimating || userInteracted.current) return;
+
+    let cancelled = false;
+
+    function scheduleNext(fn: () => void, delay: number) {
+      if (cancelled) return;
+      animationTimer.current = setTimeout(() => {
+        if (!cancelled && !userInteracted.current) fn();
+      }, delay);
+    }
+
+    function deleteChars(current: string, onDone: () => void) {
+      if (cancelled || userInteracted.current) return;
+      if (current.length === 0) {
+        scheduleNext(onDone, PAUSE_AFTER_DELETE);
+        return;
+      }
+      const next = current.slice(0, -1);
+      handleNameChange(next);
+      scheduleNext(() => deleteChars(next, onDone), DELETE_SPEED);
+    }
+
+    function typeChars(target: string, index: number, onDone: () => void) {
+      if (cancelled || userInteracted.current) return;
+      if (index > target.length) {
+        scheduleNext(onDone, PAUSE_AFTER_TYPE);
+        return;
+      }
+      const partial = target.slice(0, index);
+      handleNameChange(partial);
+      scheduleNext(() => typeChars(target, index + 1, onDone), TYPE_SPEED);
+    }
+
+    function runCycle() {
+      if (cancelled || userInteracted.current) return;
+      nameIndexRef.current = (nameIndexRef.current + 1) % DEMO_NAMES.length;
+      const nextName = DEMO_NAMES[nameIndexRef.current];
+
+      deleteChars(DEMO_NAMES[(nameIndexRef.current - 1 + DEMO_NAMES.length) % DEMO_NAMES.length], () => {
+        typeChars(nextName, 1, () => {
+          // Regenerate the rest of the data for the new name
+          setUserData(generateUserData(nextName));
+          scheduleNext(runCycle, 0);
+        });
+      });
+    }
+
+    // Start the first cycle after the initial pause
+    scheduleNext(runCycle, PAUSE_AFTER_TYPE);
+
+    return () => {
+      cancelled = true;
+      if (animationTimer.current) {
+        clearTimeout(animationTimer.current);
+        animationTimer.current = null;
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAnimating]);
 
   return (
     <div className="flex min-h-full flex-col justify-center gap-6 p-8 md:gap-8 md:p-12">
@@ -125,16 +217,26 @@ function GuidedDemo() {
             {"  "}
             <span className="text-syntax-punctuation">name:</span>{" "}
             <span className="text-primary">"</span>
-            <input
-              type="text"
-              value={nameOverride}
-              onChange={(e) => handleNameChange(e.target.value)}
-              spellCheck={false}
-              className="inline w-auto cursor-text rounded-sm bg-primary/10 px-0.5 text-center text-[13px] text-primary outline-none"
-              maxLength={20}
-              style={{width: `${Math.max(nameOverride.length, 1) + 1}ch`}}
-              aria-label="Name override"
-            />
+            <span className="relative inline-flex items-center">
+              <input
+                ref={inputRef}
+                type="text"
+                value={nameOverride}
+                onChange={(e) => {
+                  stopAnimation();
+                  handleNameChange(e.target.value);
+                }}
+                onFocus={stopAnimation}
+                spellCheck={false}
+                className="inline w-auto cursor-text rounded-sm bg-primary/10 px-0.5 text-center text-[13px] text-primary outline-none"
+                maxLength={20}
+                style={{width: `${Math.max(nameOverride.length, 1) + 1}ch`}}
+                aria-label="Name override"
+              />
+              {showCaret && (
+                <span className="pointer-events-none absolute -right-px top-[2px] bottom-[2px] w-[2px] animate-[blink-caret_1s_step-end_infinite] bg-primary" />
+              )}
+            </span>
             <span className="text-primary">"</span>
             {"  "}
             <span className="text-syntax-muted">{"// \u2190 edit me"}</span>

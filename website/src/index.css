@@ -131,6 +131,10 @@ textarea {
   50% { opacity: 0; }
 }
 
+@keyframes blink-caret {
+  50% { opacity: 0; }
+}
+
 @media (prefers-reduced-motion: no-preference) {
   .fade-up {
     animation: fade-up 420ms ease-out both;

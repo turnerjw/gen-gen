@@ -302,7 +302,7 @@ function GuidedDemo() {
 
 function HomePage() {
   return (
-    <div className="grid h-[calc(100vh-var(--header-height))] grid-cols-1 md:grid-cols-[1fr_18px_1fr]">
+    <div className="grid grid-cols-1 md:h-[calc(100vh-var(--header-height))] md:grid-cols-[1fr_18px_1fr]">
       {/* LEFT — Name, why, install (2-col × 3-row grid) */}
       <div className="grid grid-cols-[1fr_8fr] grid-rows-[1fr_auto_auto] gap-[3px] bg-foreground">
         {/* Row 1 — title */}
@@ -354,7 +354,7 @@ function HomePage() {
 
       {/* RIGHT — Guided demo */}
       <div className="relative border-t-brand border-foreground bg-syntax-surface text-syntax-identifier md:border-t-0">
-        <div className="absolute inset-0 overflow-y-auto">
+        <div className="md:absolute md:inset-0 md:overflow-y-auto">
           <GuidedDemo />
         </div>
       </div>
